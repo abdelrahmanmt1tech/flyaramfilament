@@ -17,6 +17,7 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -31,55 +32,74 @@ class AirlineResource extends Resource
 
     protected static ?string $slug = 'airlines';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingOffice;
+    protected static ?string $navigationLabel = "الشركات";
+    protected static ?string $pluralModelLabel = "الشركات";
+    protected static ?string $modelLabel = 'شركة';
+
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.airlines');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-
-
-                TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
-                    ->required(),
-
-                TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
-                    ->required(),
-
-
-
-
-
-                TextInput::make('code'),
-
-                TextInput::make('code_string'),
-
-                Checkbox::make('is_internal'),
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Airline $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Airline $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                Section::make(__('dashboard.fields.airline_info')) // Section title
+                    ->columns(2) // divide into 2 columns
+                    ->columnSpanFull()
+                    ->schema([
+                        TextInput::make('name.ar')
+                            ->label(__('dashboard.fields.name_ar'))
+                            ->suffix("ar")
+                            ->required(),
+    
+                        TextInput::make('name.en')
+                            ->label(__('dashboard.fields.name_en'))
+                            ->suffix("en")
+                            ->required(),
+    
+                        TextInput::make('iata_code')
+                            ->label(__('dashboard.fields.iata_code'))
+                            ->placeholder('مثال: SV للسعودية')
+                            ->maxLength(2),
+    
+                        TextInput::make('iata_prefix')
+                            ->label(__('dashboard.fields.iata_prefix'))
+                            ->placeholder('مثال: 096')
+                            ->maxLength(3)
+                            ->numeric(),
+    
+                        TextInput::make('icao_code')
+                            ->label(__('dashboard.fields.icao_code'))
+                            ->placeholder('مثال: SVA للسعودية')
+                            ->maxLength(3),
+                    ]),
             ]);
     }
-
+    
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('code'),
+                TextColumn::make('iata_code')
+                    ->label(__('dashboard.fields.iata_code'))
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('code_string'),
+                TextColumn::make('iata_prefix')
+                    ->label(__('dashboard.fields.iata_prefix')),
 
-                TextColumn::make('is_internal'),
+                TextColumn::make('icao_code')
+                    ->label(__('dashboard.fields.icao_code')),
+
             ])
             ->filters([
                 TrashedFilter::make(),
@@ -118,6 +138,6 @@ class AirlineResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name'];
+        return ['name', 'iata_code', 'icao_code'];
     }
 }

@@ -29,8 +29,16 @@ class UploadTicket extends Page
 
 
     public $defaultAction = 'onboarding';
-    protected ?string $subheading = 'Custom Page Subheading';
 
+    public function getTitle(): string
+    {
+        return __('dashboard.sidebar.upload_tickets');
+    }
+    
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.upload_tickets');
+    }
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::CloudArrowUp;
 
@@ -64,7 +72,7 @@ class UploadTicket extends Page
                 Form::make([
 
                     FileUpload::make('text_file')
-                        ->label('Upload TXT File')
+                        ->label(__('dashboard.upload_ticket.form.file_label'))
                         ->required()
                         ->previewable(false)
                         ->moveFiles()
@@ -77,6 +85,7 @@ class UploadTicket extends Page
 
                         Actions::make([
                             Action::make('save')
+                                ->label(__('dashboard.save'))
                                 ->submit('save')
                                 ->keyBindings(['mod+s']),
                         ]),
@@ -93,7 +102,7 @@ class UploadTicket extends Page
 
             Notification::make()
                 ->danger()
-                ->title('من فضلك اختر ملفاً')
+                ->title(__('dashboard.upload_ticket.messages.select_file'))
                 ->send();
 
             return;
@@ -115,7 +124,7 @@ class UploadTicket extends Page
                     if ($zip->open($absPath) !== true) {
                         Notification::make()
                             ->danger()
-                            ->title( 'تعذّر فتح ملف ZIP')
+                            ->title(__('dashboard.upload_ticket.messages.zip_open_error'))
                             ->send();
                         return;
                     }
@@ -142,7 +151,7 @@ class UploadTicket extends Page
                     if (!is_file($absPath)) {
                         Notification::make()
                             ->danger()
-                            ->title(  'الملف غير موجود على القرص')
+                            ->title(__('dashboard.upload_ticket.messages.file_not_found'))
                             ->send();
                         return;
                     }
@@ -166,14 +175,14 @@ class UploadTicket extends Page
                 */
                 Notification::make()
                     ->success()
-                    ->title('تم استيراد التذكرة/التذاكر بنجاح')
+                    ->title(__('dashboard.upload_ticket.messages.import_success'))
                     ->send();
 
             } catch (\Throwable $e) {
                 report($e);
                 Notification::make()
                     ->danger()
-                    ->title('حدث خطأ أثناء الاستيراد: ' . $e->getMessage())
+                    ->title(__('dashboard.upload_ticket.messages.import_error') . ': ' . $e->getMessage())
                     ->send();
             }
 

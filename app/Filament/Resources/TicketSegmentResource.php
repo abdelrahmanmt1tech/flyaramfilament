@@ -28,7 +28,12 @@ class TicketSegmentResource extends Resource
 
     protected static ?string $slug = 'ticket-segments';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::QueueList;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.ticket_segments');
+    }
 
 
     public static function canAccess(): bool

@@ -18,6 +18,8 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -32,37 +34,47 @@ class SupplierResource extends Resource
 
     protected static ?string $slug = 'suppliers';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "الموردون";
+    protected static ?string $pluralModelLabel = "الموردون";
+    protected static ?string $modelLabel = 'مورد';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Truck;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.suppliers');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required(),
+                Section::make(__('dashboard.fields.basic_info'))
+                    ->schema([
+                        TextInput::make('name')
+                            ->required()
+                            ->label(__('dashboard.fields.name'))
+                            ->columnSpanFull(),
 
-                TextInput::make('tax_number')
-                    ->required(),
+                        TextInput::make('tax_number')
+                            ->required()
+                            ->label(__('dashboard.fields.tax_number'))
+                            ->columnSpanFull(),
+                    ]),
 
-
-
-                Repeater::make('contactInfos')
-                    ->relationship('contactInfos')
-                    ->schema(ContactInfoForm::make())
-                    ->label('معلومات التواصل')
-                    ->reorderable()
-                    ->collapsible()
-                    ->grid(2),
-
-
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Supplier $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Supplier $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                Section::make(__('dashboard.fields.contact_info'))
+                    ->schema([
+                        Repeater::make('contactInfos')
+                            ->relationship('contactInfos')
+                            ->schema(ContactInfoForm::make())
+                            ->label(__('dashboard.fields.contact_infos'))
+                            ->reorderable()
+                            ->collapsible()
+                            ->grid(2)
+                            ->defaultItems(0)
+                            ->addActionLabel(__('dashboard.fields.add_contact_info')),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -71,10 +83,20 @@ class SupplierResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('tax_number'),
+                TextColumn::make('tax_number')
+                    ->label(__('dashboard.fields.tax_number'))
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('contactInfos.phone')
+                    ->label(__('dashboard.fields.phone'))
+                    ->getStateUsing(fn ($record) => $record->contactInfos()->first()?->phone ?? '-')
+                    ->sortable(false)
+                    ->searchable(false),
             ])
             ->filters([
                 TrashedFilter::make(),

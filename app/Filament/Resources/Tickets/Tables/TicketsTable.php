@@ -27,118 +27,99 @@ class TicketsTable
 
                 // Ticket No
                 TextColumn::make('ticket_number_core')
-                    ->label('Ticket No')
+                    ->label(__('dashboard.fields.ticket_no'))
                     ->searchable()
                     ->sortable()
                     ->copyable(),
 
                 TextColumn::make('gds')
+                    ->label(__('dashboard.fields.gds'))
                     ->searchable()
-                    ->sortable()
-                   ,
-
+                    ->sortable(),
 
                 // Booking Date
                 TextColumn::make('booking_date')
-                    ->label('Booking Date')
+                    ->label(__('dashboard.fields.booking_date_label'))
                     ->state(fn($record) => ($record?->booking_date || $record?->issue_date))
                     ->date()
                     ->sortable(),
 
-
-
                 // Passenger (أول اسم / عدد)
                 TextColumn::make('passengers')
-                    ->label('Passenger')
+                    ->label(__('dashboard.fields.passenger_label'))
                     ->state(fn($record) => $record->passengers()->limit(3)
-                        ->pluck('first_name')->implode(' | '))
-                ,
+                        ->pluck('first_name')->implode(' | ')),
 
                 TextColumn::make('office_id')
-                    ->label('#Branch')
+                    ->label(__('dashboard.fields.branch_number'))
                     ->prefix(fn($record) => $record?->branch_code)
                     ->sortable(),
 
                 TextColumn::make('created_by_user')
-                    ->label('#User')
-//                    ->prefix(fn($record) => $record?->branch_code)
+                    ->label(__('dashboard.fields.user_number'))
                     ->sortable(),
 
-
-                TextColumn::make('ticket_type_code')->label('Type Code')
+                TextColumn::make('ticket_type_code')
+                    ->label(__('dashboard.fields.type_code'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->badge(),
-//
-//                TextColumn::make('ticket_type')->label('Type Name')
-//                    ->toggleable(isToggledHiddenByDefault: true),
-
 
                 IconColumn::make('is_domestic_flight')
-                    ->label('INTERNAL')
+                    ->label(__('dashboard.fields.internal'))
                     ->boolean()
                     ->sortable(),
 
-
-
-
                 TextColumn::make('cost_total_amount')
-                    ->label('Cost')
+                    ->label(__('dashboard.fields.cost'))
                     ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
                     ->sortable(),
 
                 // Price For Sale (النهائي)
                 TextColumn::make('sale_total_amount')
-                    ->label('Price For Sale')
-
+                    ->label(__('dashboard.fields.price_for_sale'))
                     ->badge()
-                    ->color(function($record)  {
-                        if ($record->sale_total_amount < $record->cost_total_amount ){
+                    ->color(function($record) {
+                        if ($record->sale_total_amount < $record->cost_total_amount) {
                             return "danger";
                         }
-                        return "info" ;
+                        return "info";
                     })
-
-
                     ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
                     ->sortable(),
 
                 // Profits
                 TextColumn::make('profit_amount')
-                    ->label('Profits')
+                    ->label(__('dashboard.fields.profits'))
                     ->badge()
-                    ->state(fn($record)=> $record->profit_amount ?? "-")
-                    ->color(function($record)  {
-                        if (!$record->profit_amount){
-                            return "danger"; ;
+                    ->state(fn($record) => $record->profit_amount ?? "-")
+                    ->color(function($record) {
+                        if (!$record->profit_amount) {
+                            return "danger";
                         }
-                        if ($record->profit_amount < 10 ){
-                            return "warning" ;
+                        if ($record->profit_amount < 10) {
+                            return "warning";
                         }
-                        return "success" ;
+                        return "success";
                     })
                     ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
                     ->sortable()
                     ->toggleable(),
 
-
-
-
                 TextColumn::make('airline.name')
-                    ->label('Airline')
+                    ->label(__('dashboard.fields.airline_label'))
                     ->placeholder(fn($record) => $record->airline_name)
                     ->searchable()
                     ->sortable(),
 
                 // Flights (مسار مختصر)
                 TextColumn::make('itinerary_string')
-                    ->label('Flights')
+                    ->label(__('dashboard.fields.flights'))
                     ->limit(40)
                     ->tooltip(fn($record) => $record->itinerary_string ?? "-")
                     ->sortable(),
 
-
                 TextColumn::make('trip_type')
-                    ->label('TYPE')
+                    ->label(__('dashboard.fields.type'))
                     ->badge()
                     ->colors([
                         'success' => 'ONE-WAY',
@@ -188,60 +169,63 @@ class TicketsTable
 
                 // ======== باقي الحقول (togglable) ========
 
-                /*
-
-                TextColumn::make('pnr')->label('PNR')
+                TextColumn::make('pnr')
+                    ->label(__('dashboard.fields.pnr'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable()
                     ->searchable(),
 
-                TextColumn::make('validating_carrier_code')->label('Validating')
+                TextColumn::make('validating_carrier_code')
+                    ->label(__('dashboard.fields.validating_carrier_code'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->badge(),
 
-                TextColumn::make('branch_code')->label('Branch Code')
+                TextColumn::make('branch_code')
+                    ->label(__('dashboard.fields.branch_code'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('office_id')->label('Office ID')
+                TextColumn::make('office_id')
+                    ->label(__('dashboard.fields.office_id'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('created_by_user')->label('Created By')
+                TextColumn::make('created_by_user')
+                    ->label(__('dashboard.fields.created_by_user'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('fare_basis_out')->label('Fare Basis Out')
+                TextColumn::make('fare_basis_out')
+                    ->label(__('dashboard.fields.fare_basis_out'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('fare_basis_in')->label('Fare Basis In')
+                TextColumn::make('fare_basis_in')
+                    ->label(__('dashboard.fields.fare_basis_in'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('issue_date')->label('Issue Date')
-                    ->date('Y-m-d')->sortable()
+                TextColumn::make('issue_date')
+                    ->label(__('dashboard.fields.issue_date'))
+                    ->date('Y-m-d')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('cost_base_amount')->label('Cost (Base)')
-                    //->money(fn($r) => optional($r->currency)->symbol ?: 'SAR', true)
+                TextColumn::make('cost_base_amount')
+                    ->label(__('dashboard.fields.cost_base_amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('cost_tax_amount')->label('Cost (Taxes)')
-                    //->money(fn($r) => optional($r->currency)->symbol ?: 'SAR', true)
+                TextColumn::make('cost_tax_amount')
+                    ->label(__('dashboard.fields.cost_tax_amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('discount_amount')->label('Discount')
-                    //->money(fn($r) => optional($r->currency)->symbol ?: 'SAR', true)
+                TextColumn::make('discount_amount')
+                    ->label(__('dashboard.fields.discount_amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('extra_tax_amount')->label('Extra Tax')
-                    //->money(fn($r) => optional($r->currency)->symbol ?: 'SAR', true)
+                TextColumn::make('extra_tax_amount')
+                    ->label(__('dashboard.fields.extra_tax_amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('carrier_pnr')->label('Carrier PNR')
+                TextColumn::make('carrier_pnr')
+                    ->label(__('dashboard.fields.carrier_pnr'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable(),
-
-
-
-
-                */
 
 
 

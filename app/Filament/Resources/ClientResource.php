@@ -19,6 +19,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -34,81 +36,85 @@ class ClientResource extends Resource
 
     protected static ?string $slug = 'clients';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "العملاء";
+    protected static ?string $pluralModelLabel = "العملاء";
+    protected static ?string $modelLabel = 'عميل';
 
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.clients');
+    }
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
-                    ->required(),
+                Section::make(__('dashboard.fields.basic_info'))
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('name.ar')
+                                    ->label(__('dashboard.fields.name_ar'))->suffix("ar")
+                                    ->required(),
 
-                TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
-                    ->required(),
+                                TextInput::make('name.en')
+                                    ->label(__('dashboard.fields.name_en'))->suffix("en")
+                                    ->required(),
 
+                                TextInput::make('company_name.ar')
+                                    ->label(__('dashboard.fields.company_name_ar'))->suffix("ar")
+                                    ->required(),
 
-                TextInput::make('company_name.ar')
-                    ->label('Company Name')->suffix("ar")
-                    ->required(),
+                                TextInput::make('company_name.en')
+                                    ->label(__('dashboard.fields.company_name_en'))->suffix("en")
+                                    ->required(),
+                            ]),
 
-                TextInput::make('company_name.en')
-                    ->label('Company Name')->suffix("en")
-                    ->required(),
-
-
-                TextInput::make('tax_number')
-                    ->required(),
-
-                Select::make('sales_rep_id')
-                    ->relationship('salesRep', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required(),
-
-
-                Select::make('lead_source_id')
-                    ->relationship('leadSource', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->createOptionForm([
-                        TextInput::make('name.ar')
-                            ->label('Name')->suffix("ar")
-                            ->required(),
-
-                        TextInput::make('name.en')
-                            ->label('Name')->suffix("en")
+                        TextInput::make('tax_number')
+                            ->label(__('dashboard.fields.tax_number'))
                             ->required()
+                            ->columnSpanFull(),
 
+                        Select::make('sales_rep_id')
+                            ->relationship('salesRep', 'name')
+                            ->label(__('dashboard.fields.sales_rep'))
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Select::make('lead_source_id')
+                            ->relationship('leadSource', 'name')
+                            ->label(__('dashboard.fields.lead_source'))
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                TextInput::make('name.ar')
+                                    ->label(__('dashboard.fields.name_ar'))->suffix("ar")
+                                    ->required(),
+
+                                TextInput::make('name.en')
+                                    ->label(__('dashboard.fields.name_en'))->suffix("en")
+                                    ->required()
+                            ])
+                            ->required()
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make(__('dashboard.fields.contact_info'))
+                    ->schema([
+                        Repeater::make('contactInfos')
+                            ->relationship('contactInfos')
+                            ->schema(ContactInfoForm::make())
+                            ->label(__('dashboard.fields.contact_infos'))
+                            ->reorderable()
+                            ->collapsible()
+                            ->grid(2)
+                            ->defaultItems(0)
+                            ->addActionLabel(__('dashboard.fields.add_contact_info')),
                     ])
-                    ->required(),
-
-
-//
-//                Select::make('classifications')
-//                    ->relationship('classifications', 'name')
-//                    ->searchable()
-//                    ->preload()
-//                    ->required(),
-
-
-                Repeater::make('contactInfos')
-                    ->relationship('contactInfos')
-                    ->schema(ContactInfoForm::make())
-                    ->label('معلومات التواصل')
-                    ->reorderable()
-                    ->collapsible()
-                    ->grid(2),
-
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Client $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Client $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                    ->collapsible(),
             ]);
     }
 
@@ -117,19 +123,27 @@ class ClientResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('company_name'),
+                TextColumn::make('company_name')
+                    ->label(__('dashboard.fields.company_name')),
 
-
-                TextColumn::make('tax_number'),
+                TextColumn::make('tax_number')
+                    ->label(__('dashboard.fields.tax_number')),
+                TextColumn::make('contactInfos.phone')
+                    ->label(__('dashboard.fields.phone'))
+                    ->getStateUsing(fn ($record) => $record->contactInfos()->first()?->phone ?? '-')
+                    ->sortable(false)
+                    ->searchable(false),
 
                 TextColumn::make('salesRep.name')
+                    ->label(__('dashboard.fields.sales_rep'))
                     ->searchable()
                     ->sortable(),
-
-                TextColumn::make('lead_source_id'),
+                TextColumn::make('lead_source_id')
+                    ->label(__('dashboard.fields.lead_source')),
             ])
             ->filters([
                 TrashedFilter::make(),

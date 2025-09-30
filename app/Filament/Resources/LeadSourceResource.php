@@ -31,32 +31,29 @@ class LeadSourceResource extends Resource
 
     protected static ?string $slug = 'lead-sources';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "مصادر العملاء المحتملين";
+    protected static ?string $pluralModelLabel = "مصادر العملاء المحتملين";
+    protected static ?string $modelLabel = 'مصدر عميل محتمل';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Funnel;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.lead_sources');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
+                    ->label(__('dashboard.fields.name_ar'))->suffix("ar")
                     ->required(),
 
                 TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
+                    ->label(__('dashboard.fields.name_en'))->suffix("en")
                     ->required(),
 
-
-                Fieldset::make('Dates')
-                    ->visible(fn($record) => isset($record) && $record?->created_at)
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->label('Created Date')
-                            ->state(fn(?LeadSource $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                        TextEntry::make('updated_at')
-                            ->label('Last Modified Date')
-                            ->state(fn(?LeadSource $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
-                    ])
 
             ]);
     }
@@ -67,7 +64,8 @@ class LeadSourceResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->label(__('dashboard.fields.name')),
             ])
             ->filters([
                 TrashedFilter::make(),

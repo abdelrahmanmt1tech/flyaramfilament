@@ -12,61 +12,98 @@ class TicketInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('gds'),
-                TextEntry::make('airline_name'),
-                TextEntry::make('validating_carrier_code'),
-                TextEntry::make('ticket_number_full'),
-                TextEntry::make('ticket_number_prefix'),
-                TextEntry::make('ticket_number_core'),
-                TextEntry::make('pnr'),
+                TextEntry::make('gds')
+                    ->label(__('dashboard.fields.gds')),
+                TextEntry::make('airline_name')
+                    ->label(__('dashboard.fields.airline_name')),
+                TextEntry::make('validating_carrier_code')
+                    ->label(__('dashboard.fields.validating_carrier_code')),
+                TextEntry::make('ticket_number_full')
+                    ->label(__('dashboard.fields.ticket_number_full')),
+                TextEntry::make('ticket_number_prefix')
+                    ->label(__('dashboard.fields.ticket_number_prefix')),
+                TextEntry::make('ticket_number_core')
+                    ->label(__('dashboard.fields.ticket_number_core')),
+                TextEntry::make('pnr')
+                    ->label(__('dashboard.fields.pnr')),
                 TextEntry::make('issue_date')
+                    ->label(__('dashboard.fields.issue_date'))
                     ->date(),
                 TextEntry::make('booking_date')
+                    ->label(__('dashboard.fields.booking_date'))
                     ->date(),
-                TextEntry::make('ticket_type'),
-                TextEntry::make('ticket_type_code'),
-                TextEntry::make('trip_type'),
+                TextEntry::make('ticket_type')
+                    ->label(__('dashboard.fields.ticket_type')),
+                TextEntry::make('ticket_type_code')
+                    ->label(__('dashboard.fields.ticket_type_code')),
+                TextEntry::make('trip_type')
+                    ->label(__('dashboard.fields.trip_type')),
                 IconEntry::make('is_domestic_flight')
+                    ->label(__('dashboard.fields.is_domestic_flight'))
                     ->boolean(),
-                TextEntry::make('itinerary_string'),
-                TextEntry::make('fare_basis_out'),
-                TextEntry::make('fare_basis_in'),
-                TextEntry::make('branch_code'),
-                TextEntry::make('office_id'),
-                TextEntry::make('created_by_user'),
+                TextEntry::make('itinerary_string')
+                    ->label(__('dashboard.fields.itinerary_string')),
+                TextEntry::make('fare_basis_out')
+                    ->label(__('dashboard.fields.fare_basis_out')),
+                TextEntry::make('fare_basis_in')
+                    ->label(__('dashboard.fields.fare_basis_in')),
+                TextEntry::make('branch_code')
+                    ->label(__('dashboard.fields.branch_code')),
+                TextEntry::make('office_id')
+                    ->label(__('dashboard.fields.office_id')),
+                TextEntry::make('created_by_user')
+                    ->label(__('dashboard.fields.created_by_user')),
                 TextEntry::make('airline_id')
+                    ->label(__('dashboard.fields.airline_id'))
                     ->numeric(),
                 TextEntry::make('currency_id')
+                    ->label(__('dashboard.fields.currency_id'))
                     ->numeric(),
                 TextEntry::make('supplier_id')
+                    ->label(__('dashboard.fields.supplier_id'))
                     ->numeric(),
                 TextEntry::make('sales_user_id')
+                    ->label(__('dashboard.fields.sales_user_id'))
                     ->numeric(),
                 TextEntry::make('client_id')
+                    ->label(__('dashboard.fields.client_id'))
                     ->numeric(),
                 TextEntry::make('branch_id')
+                    ->label(__('dashboard.fields.branch_id'))
                     ->numeric(),
                 TextEntry::make('cost_base_amount')
+                    ->label(__('dashboard.fields.cost_base_amount'))
                     ->numeric(),
                 TextEntry::make('cost_tax_amount')
+                    ->label(__('dashboard.fields.cost_tax_amount'))
                     ->numeric(),
                 TextEntry::make('cost_total_amount')
+                    ->label(__('dashboard.fields.cost_total_amount'))
                     ->numeric(),
                 TextEntry::make('profit_amount')
+                    ->label(__('dashboard.fields.profit_amount'))
                     ->numeric(),
                 TextEntry::make('discount_amount')
+                    ->label(__('dashboard.fields.discount_amount'))
                     ->numeric(),
                 TextEntry::make('extra_tax_amount')
+                    ->label(__('dashboard.fields.extra_tax_amount'))
                     ->numeric(),
                 TextEntry::make('sale_total_amount')
+                    ->label(__('dashboard.fields.sale_total_amount'))
                     ->numeric(),
-                TextEntry::make('carrier_pnr_carrier'),
-                TextEntry::make('carrier_pnr'),
+                TextEntry::make('carrier_pnr_carrier')
+                    ->label(__('dashboard.fields.carrier_pnr_carrier')),
+                TextEntry::make('carrier_pnr')
+                    ->label(__('dashboard.fields.carrier_pnr')),
                 TextEntry::make('created_at')
+                    ->label(__('dashboard.fields.created_date'))
                     ->dateTime(),
                 TextEntry::make('updated_at')
+                    ->label(__('dashboard.fields.last_modified_date'))
                     ->dateTime(),
                 TextEntry::make('deleted_at')
+                    ->label(__('dashboard.fields.deleted_date'))
                     ->dateTime(),
             ]);
     }

@@ -30,26 +30,30 @@ class TaxTypeResource extends Resource
 
     protected static ?string $slug = 'tax-types';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "أنواع الضرائب";
+    protected static ?string $pluralModelLabel = "أنواع الضرائب";
+    protected static ?string $modelLabel = 'نوع ضريبة';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ReceiptPercent;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.tax_types');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->label(__('dashboard.fields.name')),
 
                 TextInput::make('value')
                     ->required()
-                    ->numeric(),
+                    ->numeric()
+                    ->label(__('dashboard.fields.value')),
 
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?TaxType $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?TaxType $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
             ]);
     }
 
@@ -59,9 +63,11 @@ class TaxTypeResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->label(__('dashboard.fields.name')),
 
-                TextColumn::make('value'),
+                TextColumn::make('value')
+                    ->label(__('dashboard.fields.value')),
             ])
             ->filters([
                 TrashedFilter::make(),
@@ -85,8 +91,8 @@ class TaxTypeResource extends Resource
     {
         return [
             'index' => Pages\ListTaxTypes::route('/'),
-            'create' => Pages\CreateTaxType::route('/create'),
-            'edit' => Pages\EditTaxType::route('/{record}/edit'),
+            // 'create' => Pages\CreateTaxType::route('/create'),
+            // 'edit' => Pages\EditTaxType::route('/{record}/edit'),
         ];
     }
 

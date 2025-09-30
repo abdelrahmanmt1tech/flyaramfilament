@@ -30,7 +30,16 @@ class CurrencyResource extends Resource
 
     protected static ?string $slug = 'currencies';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "العملات";
+    protected static ?string $pluralModelLabel = "العملات";
+    protected static ?string $modelLabel = 'عملة';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::CurrencyDollar;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.currencies');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -38,26 +47,20 @@ class CurrencyResource extends Resource
             ->components([
 
                 TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
+                    ->label(__('dashboard.fields.name_ar'))->suffix("ar")
                     ->required(),
 
                 TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
+                    ->label(__('dashboard.fields.name_en'))->suffix("en")
                     ->required(),
 
 
 
 
                 TextInput::make('symbol')
+                    ->label(__('dashboard.fields.symbol'))
                     ->required(),
 
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Currency $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Currency $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
             ]);
     }
 
@@ -67,9 +70,13 @@ class CurrencyResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->label(__('dashboard.fields.name')),
 
-                TextColumn::make('symbol'),
+                TextColumn::make('symbol')
+                    ->searchable()
+                    ->sortable()
+                    ->label(__('dashboard.fields.symbol')),
             ])
             ->filters([
                 TrashedFilter::make(),

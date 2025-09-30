@@ -30,7 +30,12 @@ class AirportRouteResource extends Resource
 
     protected static ?string $slug = 'airport-routes';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ArrowsRightLeft;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.airport_routes');
+    }
 
     public static function canAccess(): bool
     {

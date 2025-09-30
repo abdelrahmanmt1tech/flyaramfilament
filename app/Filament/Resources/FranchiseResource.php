@@ -18,6 +18,8 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -32,47 +34,53 @@ class FranchiseResource extends Resource
 
     protected static ?string $slug = 'franchises';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "الامتيازات";
+    protected static ?string $pluralModelLabel = "الامتيازات";
+    protected static ?string $modelLabel = 'امتياز';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingOffice2;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.franchises');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
+                Section::make(__('dashboard.fields.basic_info'))
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('name.ar')
+                                    ->label(__('dashboard.fields.name_ar'))->suffix("ar")
+                                    ->required(),
 
+                                TextInput::make('name.en')
+                                    ->label(__('dashboard.fields.name_en'))->suffix("en")
+                                    ->required(),
+                            ]),
 
-                TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
-                    ->required(),
+                        TextInput::make('tax_number')
+                            ->required()
+                            ->label(__('dashboard.fields.tax_number'))
+                            ->columnSpanFull(),
+                    ]),
 
-                TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
-                    ->required(),
-
-
-
-
-                TextInput::make('tax_number')
-                    ->required(),
-
-
-
-               Repeater::make('contactInfos')
-                    ->relationship('contactInfos')
-                    ->schema(ContactInfoForm::make())
-                    ->label('معلومات التواصل')
-                   ->reorderable()
-                    ->collapsible()
-                    ->grid(2),
-
-
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Franchise $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Franchise $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                Section::make(__('dashboard.fields.contact_info'))
+                    ->schema([
+                        Repeater::make('contactInfos')
+                            ->relationship('contactInfos')
+                            ->schema(ContactInfoForm::make())
+                            ->label(__('dashboard.fields.contact_infos'))
+                            ->reorderable()
+                            ->collapsible()
+                            ->grid(2)
+                            ->defaultItems(0)
+                            ->addActionLabel(__('dashboard.fields.add_contact_info')),
+                    ])
+                    ->collapsible(),
             ]);
     }
 
@@ -81,10 +89,20 @@ class FranchiseResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('tax_number'),
+                TextColumn::make('tax_number')
+                    ->label(__('dashboard.fields.tax_number'))
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('contactInfos.phone')
+                    ->label(__('dashboard.fields.phone'))
+                    ->getStateUsing(fn ($record) => $record->contactInfos()->first()?->phone ?? '-')
+                    ->sortable(false)
+                    ->searchable(false),
             ])
             ->filters([
                 TrashedFilter::make(),

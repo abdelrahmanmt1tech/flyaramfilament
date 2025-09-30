@@ -16,6 +16,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -30,32 +31,40 @@ class ClassificationResource extends Resource
 
     protected static ?string $slug = 'classifications';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "التصنيفات";
+    protected static ?string $pluralModelLabel = "التصنيفات";
+    protected static ?string $modelLabel = 'تصنيف';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Tag;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.classifications');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('name.ar')
-                    ->label('Name')->suffix("ar")
-                    ->required(),
+                Section::make(__('dashboard.fields.classification_info'))
+                    ->columns(2) // divide into 2 columns
+                    ->columnSpanFull()
+                    ->schema([
+                        TextInput::make('name.ar')
+                            ->label(__('dashboard.fields.name_ar'))->suffix("ar")
+                            ->required(),
 
-                TextInput::make('name.en')
-                    ->label('Name')->suffix("en")
-                    ->required(),
+                        TextInput::make('name.en')
+                            ->label(__('dashboard.fields.name_en'))->suffix("en")
+                            ->required(),
+                            TextInput::make('type')
+                            ->label(__('dashboard.fields.type')),
+        
+                    ]),
 
 
 
 
-                TextInput::make('type'),
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Classification $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Classification $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
             ]);
     }
 
@@ -64,10 +73,12 @@ class ClassificationResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('type'),
+                TextColumn::make('type')
+                    ->label(__('dashboard.fields.type')),
             ])
             ->filters([
                 TrashedFilter::make(),

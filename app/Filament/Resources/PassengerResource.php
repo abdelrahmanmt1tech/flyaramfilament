@@ -16,6 +16,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -30,30 +31,44 @@ class PassengerResource extends Resource
 
     protected static ?string $slug = 'passengers';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "المسافرون";
+    protected static ?string $pluralModelLabel = "المسافرون";
+    protected static ?string $modelLabel = 'مسافر';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Users;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.passengers');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('name')
+            Section::make(__('dashboard.fields.basic_info'))
+                ->columns(2)
+                ->columnSpanFull()
+                ->schema([
+                TextInput::make('first_name')
+                    ->label(__('dashboard.fields.first_name'))
                     ->required(),
 
-                TextInput::make('passport_expiry'),
+                TextInput::make('last_name')
+                    ->label(__('dashboard.fields.last_name'))
+                    ->required(),
 
-                TextInput::make('passport_number'),
+                TextInput::make('title')
+                    ->label(__('dashboard.fields.title')),
 
-                TextInput::make('nationality'),
+                TextInput::make('email')
+                    ->label(__('dashboard.fields.email'))
+                    ->email(),
 
-                TextInput::make('date_of_birth'),
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Passenger $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Passenger $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                TextInput::make('phone')
+                    ->label(__('dashboard.fields.phone'))
+                    ->tel(),
+                ]),
             ]);
     }
 
@@ -61,17 +76,28 @@ class PassengerResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
+                TextColumn::make('first_name')
+                    ->label(__('dashboard.fields.first_name'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('passport_expiry'),
+                TextColumn::make('last_name')
+                    ->label(__('dashboard.fields.last_name'))
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('passport_number'),
+                TextColumn::make('title')
+                    ->label(__('dashboard.fields.title'))
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('nationality'),
+                TextColumn::make('email')
+                    ->label(__('dashboard.fields.email'))
+                    ->searchable(),
 
-                TextColumn::make('date_of_birth'),
+                TextColumn::make('phone')
+                    ->label(__('dashboard.fields.phone'))
+                    ->searchable(),
             ])
             ->filters([
                 TrashedFilter::make(),
@@ -110,6 +136,6 @@ class PassengerResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name'];
+        return ['first_name', 'last_name', 'email', 'phone'];
     }
 }

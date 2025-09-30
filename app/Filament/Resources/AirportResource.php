@@ -13,9 +13,10 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section as ComponentsSection;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -30,27 +31,44 @@ class AirportResource extends Resource
 
     protected static ?string $slug = 'airports';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "المطارات";
+    protected static ?string $pluralModelLabel = "المطارات";
+    protected static ?string $modelLabel = 'مطار';
+
+
+
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::MapPin;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.airports');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('iata'),
+                ComponentsSection::make(__('dashboard.fields.airport_info')) // Section title
+                    ->columns(2) // divide into 2 columns
+                    ->columnSpanFull()
+                    ->schema([
+                        TextInput::make('iata')
+                            ->label(__('dashboard.fields.iata'))
+                            ->placeholder('مثال: JED لجدة'),
 
-                TextInput::make('name'),
+                        TextInput::make('name')
+                    ->label(__('dashboard.fields.name'))
+                    ->required(),
 
-                TextInput::make('city'),
+                TextInput::make('city')
+                    ->label(__('dashboard.fields.city')),
 
-                TextInput::make('country_code'),
-
-                TextEntry::make('created_at')
-                    ->label('Created Date')
-                    ->state(fn(?Airport $record): string => $record?->created_at?->diffForHumans() ?? '-'),
-
-                TextEntry::make('updated_at')
-                    ->label('Last Modified Date')
-                    ->state(fn(?Airport $record): string => $record?->updated_at?->diffForHumans() ?? '-'),
+                TextInput::make('country_code')
+                   ->maxLength(5)
+                    ->label(__('dashboard.fields.country_code'))
+                    ->placeholder('مثال: SA للسعودية'),
+                    ]),
             ]);
     }
 
@@ -58,15 +76,22 @@ class AirportResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('iata'),
-
-                TextColumn::make('name')
+                TextColumn::make('iata')
+                    ->label(__('dashboard.fields.iata'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('city'),
+                TextColumn::make('name')
+                    ->label(__('dashboard.fields.name'))
+                    ->searchable()
+                    ->sortable(),
 
-                TextColumn::make('country_code'),
+                TextColumn::make('city')
+                    ->label(__('dashboard.fields.city'))
+                    ->searchable(),
+
+                TextColumn::make('country_code')
+                    ->label(__('dashboard.fields.country_code')),
             ])
             ->filters([
                 TrashedFilter::make(),
@@ -105,6 +130,6 @@ class AirportResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name'];
+        return ['name', 'iata', 'city'];
     }
 }

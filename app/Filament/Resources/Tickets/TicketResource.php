@@ -22,9 +22,20 @@ class TicketResource extends Resource
 {
     protected static ?string $model = Ticket::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $slug = 'tickets';
+
+    protected static ?string $navigationLabel = "التذاكر";
+    protected static ?string $pluralModelLabel = "التذاكر";
+    protected static ?string $modelLabel = 'تذكرة';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Ticket;
 
     protected static ?string $recordTitleAttribute = 'ticket_number_core';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('dashboard.sidebar.tickets');
+    }
 
     public static function form(Schema $schema): Schema
     {
