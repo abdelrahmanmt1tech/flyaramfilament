@@ -41,4 +41,12 @@ class Client extends Model
         return $this->morphToMany(Classification::class, 'classifiable');
     }
 
+
+    public function contactInfos()
+    {
+        return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
+    }
+
+
+
 }

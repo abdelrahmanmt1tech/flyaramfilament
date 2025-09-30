@@ -14,6 +14,7 @@ class Branch extends Model
     public array $translatable = ['name'];
 
     protected $fillable = [
+        'code',
         'name',
         'tax_number',
     ];
@@ -22,5 +23,13 @@ class Branch extends Model
     {
         return $this->morphToMany(Classification::class, 'classifiable');
     }
+
+
+    public function contactInfos()
+    {
+        return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
+    }
+
+
 
 }

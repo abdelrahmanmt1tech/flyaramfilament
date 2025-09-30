@@ -18,6 +18,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'code', //  same as createdByUser
         'name',
         'email',
         'password',
@@ -45,4 +46,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function contactInfos()
+    {
+        return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
+    }
+
+
+
+
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ClientResource\Pages;
+use App\Filament\SharedForms\ContactInfoForm;
 use App\Models\Client;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -13,6 +14,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -38,14 +40,23 @@ class ClientResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
+                TextInput::make('name.ar')
+                    ->label('Name')->suffix("ar")
                     ->required(),
 
-                TextInput::make('company_name')
+                TextInput::make('name.en')
+                    ->label('Name')->suffix("en")
                     ->required(),
 
-                TextInput::make('phone')
+
+                TextInput::make('company_name.ar')
+                    ->label('Company Name')->suffix("ar")
                     ->required(),
+
+                TextInput::make('company_name.en')
+                    ->label('Company Name')->suffix("en")
+                    ->required(),
+
 
                 TextInput::make('tax_number')
                     ->required(),
@@ -53,16 +64,43 @@ class ClientResource extends Resource
                 Select::make('sales_rep_id')
                     ->relationship('salesRep', 'name')
                     ->searchable()
+                    ->preload()
                     ->required(),
 
-                TextInput::make('address')
+
+                Select::make('lead_source_id')
+                    ->relationship('leadSource', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        TextInput::make('name.ar')
+                            ->label('Name')->suffix("ar")
+                            ->required(),
+
+                        TextInput::make('name.en')
+                            ->label('Name')->suffix("en")
+                            ->required()
+
+                    ])
                     ->required(),
 
-                TextInput::make('email')
-                    ->required(),
 
-                TextInput::make('lead_source_id')
-                    ->required(),
+//
+//                Select::make('classifications')
+//                    ->relationship('classifications', 'name')
+//                    ->searchable()
+//                    ->preload()
+//                    ->required(),
+
+
+                Repeater::make('contactInfos')
+                    ->relationship('contactInfos')
+                    ->schema(ContactInfoForm::make())
+                    ->label('معلومات التواصل')
+                    ->reorderable()
+                    ->collapsible()
+                    ->grid(2),
+
 
                 TextEntry::make('created_at')
                     ->label('Created Date')
@@ -84,17 +122,10 @@ class ClientResource extends Resource
 
                 TextColumn::make('company_name'),
 
-                TextColumn::make('phone'),
 
                 TextColumn::make('tax_number'),
 
                 TextColumn::make('salesRep.name')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('address'),
-
-                TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
 

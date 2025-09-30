@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BranchResource\Pages;
+use App\Filament\SharedForms\ContactInfoForm;
 use App\Models\Branch;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -13,6 +14,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -36,9 +38,31 @@ class BranchResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name'),
+
+                TextInput::make('name.ar')
+                    ->label('Name')->suffix("ar")
+                    ->required(),
+
+                TextInput::make('name.en')
+                    ->label('Name')->suffix("en")
+                    ->required(),
+
+
+
+
+
 
                 TextInput::make('tax_number'),
+
+                Repeater::make('contactInfos')
+                    ->relationship('contactInfos')
+                    ->schema(ContactInfoForm::make())
+                    ->label('معلومات التواصل')
+                    ->reorderable()
+                    ->collapsible()
+                    ->grid(2),
+
+
 
                 TextEntry::make('created_at')
                     ->label('Created Date')

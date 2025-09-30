@@ -12,15 +12,11 @@ return new class extends Migration {
 
             $table->text('name') ->nullable();
             $table->string('company_name') ->nullable();
-            $table->string('phone') ->nullable();
             $table->string('tax_number') ->nullable();
             $table->foreignId('sales_rep_id')
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
-
-            $table->string('address')->nullable();
-            $table->string('email')->nullable();
 
             $table->foreignId('lead_source_id')->nullable()
                 ->constrained('lead_sources')

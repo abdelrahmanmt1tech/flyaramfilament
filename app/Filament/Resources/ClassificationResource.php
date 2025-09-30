@@ -36,7 +36,16 @@ class ClassificationResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name'),
+                TextInput::make('name.ar')
+                    ->label('Name')->suffix("ar")
+                    ->required(),
+
+                TextInput::make('name.en')
+                    ->label('Name')->suffix("en")
+                    ->required(),
+
+
+
 
                 TextInput::make('type'),
 
