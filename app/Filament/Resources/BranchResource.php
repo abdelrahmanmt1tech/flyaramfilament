@@ -6,6 +6,7 @@ use App\Filament\Resources\BranchResource\Pages;
 use App\Filament\SharedForms\ContactInfoForm;
 use App\Models\Branch;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -107,6 +108,11 @@ class BranchResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                Action::make('statement')
+    ->label('كشف الحساب')
+    ->icon('heroicon-o-document-text')
+    ->url(fn ($record) => url("/admin/account-statement/branch/{$record->id}"))
+    ->openUrlInNewTab(),
                 EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),

@@ -40,6 +40,11 @@ class TicketPassengerResource extends Resource
         return __('dashboard.sidebar.ticket_passengers');
     }
 
+    public static function canAccess(): bool
+    {
+        return false;
+    }
+
 
     public static function canCreate(): bool
     {

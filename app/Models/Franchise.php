@@ -28,5 +28,9 @@ class Franchise extends Model
 
 
 
+    public function accountStatements()
+    {
+        return $this->morphMany(AccountStatement::class, 'statementable');
+    }
 
 }

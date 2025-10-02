@@ -2,12 +2,22 @@
 
 namespace App\Filament\Resources\Tickets\Tables;
 
+use App\Models\AccountStatement;
+use App\Models\Branch;
+use App\Models\Client;
+use App\Models\Franchise;
+use App\Models\Supplier;
+use App\Models\TaxType;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -19,7 +29,6 @@ class TicketsTable
     public static function configure(Table $table): Table
     {
         return $table
-
             ->modifyQueryUsing(function (Builder $query): Builder {
                 return $query->with('currency');
             })
@@ -78,7 +87,7 @@ class TicketsTable
                 TextColumn::make('sale_total_amount')
                     ->label(__('dashboard.fields.price_for_sale'))
                     ->badge()
-                    ->color(function($record) {
+                    ->color(function ($record) {
                         if ($record->sale_total_amount < $record->cost_total_amount) {
                             return "danger";
                         }
@@ -92,7 +101,7 @@ class TicketsTable
                     ->label(__('dashboard.fields.profits'))
                     ->badge()
                     ->state(fn($record) => $record->profit_amount ?? "-")
-                    ->color(function($record) {
+                    ->color(function ($record) {
                         if (!$record->profit_amount) {
                             return "danger";
                         }
@@ -127,45 +136,6 @@ class TicketsTable
                         'info' => 'MULTI-SEG',
                     ])
                     ->sortable(),
-
-
-
-
-
-                // Branch
-                /*            TextColumn::make('branch.name')
-                                ->label('Branch')
-                                ->toggleable(isToggledHiddenByDefault: true)
-                                ->sortable()
-                                ->searchable(),*/
-
-                // User (مندوب/وكيل بيع)
-                /*               TextColumn::make('salesAgent.code')
-                                   ->label('User')
-                                   ->placeholder(fn($r) => $r->created_by_user)
-                                   ->tooltip(fn($r) => $r->salesAgent?->name ?: $r->created_by_user)
-                                   ->sortable()
-                                   ->searchable(), */
-
-                // TYPE (ONE-WAY / ROUND-TRIP / MULTI-SEG)
-
-
-
-                // INTERNAL (رحلة داخلية؟)
-
-
-                // Cost (شامل الضرائب)
-
-
-                // VAT (ضرائب النظام الإضافية — من Pivot ticket_tax_types)
-                /*          TextColumn::make('vat_total')
-                              ->label('VAT')
-                              ->state(fn(\App\Models\Ticket $r) => (float) $r->taxTypes()->sum('ticket_tax_types.amount'))
-                              ->money(fn($r) => optional($r->currency)->symbol ?: 'SAR', true)
-                              ->sortable(),*/
-
-                // Airline (validating)
-
 
                 // ======== باقي الحقول (togglable) ========
 
@@ -228,124 +198,283 @@ class TicketsTable
                     ->copyable(),
 
 
-
             ])
-
-                /*
-            ->columns([
-
-
-
-                TextColumn::make('gds')
-                    ->searchable(),
-                TextColumn::make('airline_name')
-                    ->searchable(),
-                TextColumn::make('validating_carrier_code')
-                    ->searchable(),
-                TextColumn::make('ticket_number_full')
-                    ->searchable(),
-                TextColumn::make('ticket_number_prefix')
-                    ->searchable(),
-                TextColumn::make('ticket_number_core')
-                    ->searchable(),
-                TextColumn::make('pnr')
-                    ->searchable(),
-                TextColumn::make('issue_date')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('booking_date')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('ticket_type')
-                    ->searchable(),
-                TextColumn::make('ticket_type_code')
-                    ->searchable(),
-                TextColumn::make('trip_type')
-                    ->searchable(),
-                IconColumn::make('is_domestic_flight')
-                    ->boolean(),
-                TextColumn::make('itinerary_string')
-                    ->searchable(),
-                TextColumn::make('fare_basis_out')
-                    ->searchable(),
-                TextColumn::make('fare_basis_in')
-                    ->searchable(),
-                TextColumn::make('branch_code')
-                    ->searchable(),
-                TextColumn::make('office_id')
-                    ->searchable(),
-                TextColumn::make('created_by_user')
-                    ->searchable(),
-                TextColumn::make('airline_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('currency_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('supplier_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('sales_user_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('client_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('branch_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('cost_base_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('cost_tax_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('cost_total_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('profit_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('discount_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('extra_tax_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('sale_total_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('carrier_pnr_carrier')
-                    ->searchable(),
-                TextColumn::make('carrier_pnr')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-
-            */
             ->filters([
                 TrashedFilter::make(),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                // Action::make('migrate')
+                //     ->label('ترحيل')
+                //     ->icon('heroicon-o-arrow-right')
+                //     ->form([
+                //         Select::make('branch_id')
+                //             ->label('ترحيل إلى فرع')
+                //             ->options(Branch::pluck('name', 'id'))
+                //             ->default(fn($record) => $record?->branch_id) //  الفرع الحالي
+                //             ->searchable()
+                //             ->preload(),
+
+                //         Select::make('franchise_id')
+                //             ->label('ترحيل إلى فرانشايز')
+                //             ->options(Franchise::pluck('name', 'id'))
+                //             ->default(fn($record) => $record?->franchise_id) //  الفرانشايز الحالي
+                //             ->searchable()
+                //             ->preload(),
+
+                //         Select::make('client_id')
+                //             ->label('ترحيل إلى عميل')
+                //             ->options(Client::pluck('name', 'id'))
+                //             ->default(fn($record) => $record?->client_id) //  العميل الحالي
+                //             ->searchable()
+                //             ->preload(),
+
+                //         Select::make('supplier_id')
+                //             ->label('ترحيل إلى مورد')
+                //             ->options(Supplier::pluck('name', 'id'))
+                //             ->default(fn($record) => $record?->supplier_id) //  المورد الحالي
+                //             ->searchable()
+                //             ->preload(),
+                //     ])
+                //     ->action(function ($record, array $data) {
+                //         if (!empty($data['branch_id'])) {
+                //             $record->branch_id = $data['branch_id'];
+                //         }
+                //         if (!empty($data['franchise_id'])) {
+                //             $record->franchise_id = $data['franchise_id'];
+                //         }
+                //         if (!empty($data['client_id'])) {
+                //             $record->client_id = $data['client_id'];
+                //         }
+                //         if (!empty($data['supplier_id'])) {
+                //             $record->supplier_id = $data['supplier_id'];
+                //         }
+                //         $record->save();
+                //         Notification::make()
+                //             ->title('تم ترحيل التذكرة')
+                //             ->success()
+                //             ->send();
+                //     })
+                //     ->requiresConfirmation()
+                //     ->modalHeading('ترحيل التذكرة')
+                //     ->modalButton('تنفيذ الترحيل')
+                //     ->color('warning'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
+                    //  ترحيل للفرع
+                    Action::make('bulkMigrateBranch')
+                        ->label('ترحيل للفرع')
+                        ->icon('heroicon-o-building-office')
+                        ->form([
+                            Select::make('branch_id')
+                                ->label('اختر الفرع')
+                                ->options(Branch::pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                $record->branch_id = $data['branch_id'];
+                                $record->save();
+                                AccountStatement::logTicket($record, Branch::class, $data['branch_id']);
+                            }
+                            Notification::make()
+                                ->title('تم ترحيل التذاكر لفرع')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('ترحيل التذاكر لفرع')
+                        ->modalButton('تنفيذ الترحيل')
+                        ->color('warning')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+
+                    //  ترحيل للفرانشايز
+                    Action::make('bulkMigrateFranchise')
+                        ->label('ترحيل للفرانشايز')
+                        ->icon('heroicon-o-building-storefront')
+                        ->form([
+                            Select::make('franchise_id')
+                                ->label('اختر الفرانشايز')
+                                ->options(Franchise::pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                $record->franchise_id = $data['franchise_id'];
+                                $record->save();
+                                AccountStatement::logTicket($record, Franchise::class, $data['franchise_id']);
+                            }
+                            Notification::make()
+                                ->title('تم ترحيل التذاكر لفرانشايز')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('ترحيل التذاكر لفرانشايز')
+                        ->modalButton('تنفيذ الترحيل')
+                        ->color('warning')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+
+                    //  ترحيل للعميل
+                    Action::make('bulkMigrateClient')
+                        ->label('ترحيل للعميل')
+                        ->icon('heroicon-o-user')
+                        ->form([
+                            Select::make('client_id')
+                                ->label('اختر العميل')
+                                ->options(Client::pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                $record->client_id = $data['client_id'];
+                                $record->save();
+                               AccountStatement::logTicket($record, Client::class, $data['client_id']);
+                            }
+                            Notification::make()
+                                ->title('تم ترحيل التذاكر لعميل')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('ترحيل التذاكر لعميل')
+                        ->modalButton('تنفيذ الترحيل')
+                        ->color('warning')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+
+                    //  ترحيل للمورد
+                    Action::make('bulkMigrateSupplier')
+                        ->label('ترحيل للمورد')
+                        ->icon('heroicon-o-truck')
+                        ->form([
+                            Select::make('supplier_id')
+                                ->label('اختر المورد')
+                                ->options(Supplier::pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                $record->supplier_id = $data['supplier_id'];
+                                $record->save();
+                               AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], true);
+                            }
+                            Notification::make()
+                                ->title('تم ترحيل التذاكر لمورد')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('ترحيل التذاكر لمورد')
+                        ->modalButton('تنفيذ الترحيل')
+                        ->color('warning')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+                    Action::make('bulkEditProfitAndDiscount')
+                        ->label('تعديل الربح والخصم')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->form([
+                            // Profit field
+                            TextInput::make('profit_amount')
+                                ->label('تعديل الربح')
+                                ->numeric()
+                                ->minValue(0)
+                                ->nullable()
+                                ->suffix('SAR')
+                                ->reactive(),
+
+                            // Tax Type select
+                            Select::make('tax_type_id')
+                                ->label('نوع الضريبة')
+                                ->options(
+                                    TaxType::all()->mapWithKeys(function ($tax) {
+                                        return [$tax->id => $tax->name . ' (' . $tax->value . '%)'];
+                                    })
+                                )
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    if ($state && $get('profit_amount')) {
+                                        $tax = TaxType::find($state);
+                                        if ($tax) {
+                                            $profit = $get('profit_amount');
+                                            $extraTax = ($profit * $tax->value) / 100;
+                                            $set('extra_tax_amount', $extraTax);
+                                        }
+                                    }
+                                }),
+
+                            // Extra Tax field (read-only, auto-calculated)
+                            TextInput::make('extra_tax_amount')
+                                ->label('قيمه الضريبه من الارباح')
+                                ->numeric()
+                                ->minValue(0)
+                                ->nullable()
+                                ->suffix('SAR')
+                                ->disabled()
+                                ->reactive(), // نجعله للعرض فقط
+
+                            // Discount field
+                            TextInput::make('discount_amount')
+                                ->label('تعديل الخصم')
+                                ->numeric()
+                                ->minValue(0)
+                                ->nullable()
+                                ->suffix('SAR'),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                if (!empty($data['discount_amount'])) {
+                                    $record->discount_amount = $data['discount_amount'];
+                                }
+
+                                if (!empty($data['profit_amount'])) {
+                                    $record->profit_amount = $data['profit_amount'];
+                                }
+
+                                if (!empty($data['tax_type_id'])) {
+                                    $tax = TaxType::find($data['tax_type_id']);
+                                    $record->tax_type_id = $tax->id;
+
+                                    if (!empty($data['profit_amount']) && $tax) {
+                                        $record->extra_tax_amount = ($data['profit_amount'] * $tax->value) / 100;
+                                    }
+                                }
+
+                                $record->save();
+                            }
+                            Notification::make()
+                                ->title('تم تعديل الربح والخصم')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('تعديل الربح والخصم')
+                        ->modalButton('تنفيذ التعديل')
+                        ->color('warning')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+
+
                 ]),
             ]);
     }

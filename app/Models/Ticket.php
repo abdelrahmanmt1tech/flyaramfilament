@@ -22,6 +22,7 @@ class Ticket extends Model
         'cost_base_amount', 'cost_tax_amount', 'cost_total_amount',
         'profit_amount', 'discount_amount', 'extra_tax_amount', 'sale_total_amount',
         'carrier_pnr_carrier', 'carrier_pnr', 'price_taxes_breakdown',
+        'franchise_id','tax_type_id'
     ];
 
     protected $casts = [
@@ -78,22 +79,34 @@ class Ticket extends Model
     protected static function booted()
     {
         static::saving(function (Ticket $t) {
-            if (is_null($t->sale_total_amount)) {
                 $t->sale_total_amount = ($t->cost_total_amount ?? 0)
                     + ($t->extra_tax_amount ?? 0)
                     + ($t->profit_amount ?? 0)
                     - ($t->discount_amount ?? 0);
-            }
         });
     }
 
 
-    public function passengers()
+    // public function passengers()
+    // {
+    //     return $this->belongsToMany(Passenger::class, 'ticket_passengers')
+    //         ->withPivot(['ticket_number_full', 'ticket_number_prefix', 'ticket_number_core'])
+    //         ->withTimestamps();
+    // }
+
+    public function franchise()
     {
-        return $this->belongsToMany(Passenger::class, 'ticket_passengers')
-            ->withPivot(['ticket_number_full', 'ticket_number_prefix', 'ticket_number_core'])
-            ->withTimestamps();
+        return $this->belongsTo(Franchise::class);
     }
 
+    public function taxType()
+    {
+        return $this->belongsTo(TaxType::class);
+    }
 
+    public function accountStatements()
+    {
+        return $this->morphMany(AccountStatement::class, 'statementable');
+    }
+    
 }

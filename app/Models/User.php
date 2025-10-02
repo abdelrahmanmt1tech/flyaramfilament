@@ -52,7 +52,4 @@ class User extends Authenticatable
         return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
     }
 
-
-
-
 }

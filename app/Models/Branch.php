@@ -30,6 +30,11 @@ class Branch extends Model
         return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
     }
 
+    
+    public function accountStatements()
+    {
+        return $this->morphMany(AccountStatement::class, 'statementable');
+    }
 
 
 }

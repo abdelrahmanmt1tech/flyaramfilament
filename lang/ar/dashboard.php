@@ -30,6 +30,7 @@ return [
         'ticket_segments' => 'شرائح التذاكر',
         'tickets' => 'التذاكر',
         'upload_tickets' => 'رفع تذاكر',
+        'account_statement' => 'كشف الحساب',
     ],
 
     'upload_ticket' => [
@@ -166,6 +167,18 @@ return [
         'airline_label' => 'شركة الطيران',
         'flights' => 'الرحلات',
         'type' => 'النوع',
+        'franchise_name' => 'اسم الامتياز',
+        'branch_name' => 'اسم الفرع',
+        'client_name' => 'اسم العميل',
+        'supplier_name' => 'اسم المورد',
+        'sales_user_name' => 'اسم مندوب المبيعات',
+        'currency_code' => 'رمز العملة',
+        'ticket_data' => 'بيانات التذكرة',
+        'costs_and_relations' => 'التكلفة والعلاقات',
+        'price_taxes_breakdown' => 'تفصيل الضرائب على السعر',
+        'code' => 'كود',
+        'amount' => 'مبلغ',
+        'currency' => 'العملة',
     ],
 
 

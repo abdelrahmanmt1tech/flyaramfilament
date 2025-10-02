@@ -49,6 +49,8 @@ return new class extends Migration {
     $t->foreignId('sales_user_id')->nullable()->constrained('users')->nullOnDelete(); // وكيل/مندوب (User by code)
     $t->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
     $t->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
+    $t->foreignId('franchise_id')->nullable()->constrained('franchises')->nullOnDelete();
+    $t->foreignId('tax_type_id')->nullable()->constrained('tax_types')->nullOnDelete();
 
 
             // التسعير (التكلفة)

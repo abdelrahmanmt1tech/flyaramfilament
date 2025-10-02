@@ -30,7 +30,7 @@ return [
         'ticket_segments' => 'Ticket Segments',
         'tickets' => 'Tickets',
         'upload_tickets' => 'Upload Tickets',
-
+        'account_statement' => 'Account Statement',
     ],
 
     'upload_ticket' => [
@@ -160,6 +160,18 @@ return [
         'airline_label' => 'Airline',
         'flights' => 'Flights',
         'type' => 'Type',
+        'franchise_name' => 'Franchise Name',
+        'branch_name' => 'Branch Name',
+        'client_name' => 'Client Name',
+        'supplier_name' => 'Supplier Name',
+        'sales_user_name' => 'Sales User Name',
+        'currency_code' => 'Currency Code',
+        'ticket_data' => 'Ticket Data',
+        'costs_and_relations' => 'Costs and Relations', 
+        'price_taxes_breakdown' => 'Price Taxes Breakdown',
+        'code' => 'Code',
+        'amount' => 'Amount',
+        'currency' => 'Currency',
     ],
 
 
