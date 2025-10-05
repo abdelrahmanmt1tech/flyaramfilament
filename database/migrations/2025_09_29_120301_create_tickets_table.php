@@ -78,6 +78,9 @@ return new class extends Migration {
             $t->index(['ticket_number_prefix','ticket_number_core']);
             $t->index(['pnr']);
 
+
+            // ////
+            $t->boolean('is_invoiced')->default(false);
         });
     }
 

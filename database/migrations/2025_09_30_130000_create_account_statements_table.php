@@ -18,7 +18,6 @@ return new class extends Migration {
             $table->string('doc_no')->nullable();
             $table->string('ticket_id')->nullable(); // Ticket reference/ID
             $table->string('lpo_no')->nullable(); // LPO (Local Purchase Order) number
-            $table->json('passengers')->nullable();
             $table->string('sector')->nullable();
         
             // Financial fields

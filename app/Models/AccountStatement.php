@@ -29,7 +29,6 @@ class AccountStatement extends Model
         'debit' => 'decimal:2',
         'credit' => 'decimal:2',
         'balance' => 'decimal:2',
-        'passengers' => 'array', // important
 
     ];
 
@@ -80,4 +79,11 @@ class AccountStatement extends Model
     {
         return $this->belongsTo(Ticket::class, 'ticket_id');
     }
+
+    public function passengers()
+    {
+        return $this->hasManyThrough(Passenger::class, TicketPassenger::class , 'ticket_id', 'id', 'ticket_id', 'passenger_id');
+    }
+
+
 }

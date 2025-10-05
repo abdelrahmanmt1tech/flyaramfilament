@@ -179,6 +179,22 @@ return [
         'code' => 'كود',
         'amount' => 'مبلغ',
         'currency' => 'العملة',
+        'id'                 => 'المعرف',
+        'statementable_type' => 'النوع',
+        'statementable_id'   => 'الجهة',
+        'date'               => 'التاريخ',
+        'doc_no'             => 'رقم المستند',
+        'ticket_id'          => 'التذكرة',
+        'lpo_no'             => 'LPO رقم',
+        'passengers'         => 'المسافرون',
+        'sector'             => 'القطاع',
+        'debit'              => 'مدين',
+        'credit'             => 'دائن',
+        'balance'            => 'الرصيد',
+        'created_at'         => 'تاريخ الإنشاء',
+        'updated_at'         => 'تاريخ التعديل',
+        'account_statement' => 'كشف الحساب',
+
     ],
 
 

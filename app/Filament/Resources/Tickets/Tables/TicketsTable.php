@@ -6,8 +6,10 @@ use App\Models\AccountStatement;
 use App\Models\Branch;
 use App\Models\Client;
 use App\Models\Franchise;
+use App\Models\Invoice;
 use App\Models\Supplier;
 use App\Models\TaxType;
+use App\Models\Ticket;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -15,9 +17,13 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -205,61 +211,6 @@ class TicketsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                // Action::make('migrate')
-                //     ->label('ترحيل')
-                //     ->icon('heroicon-o-arrow-right')
-                //     ->form([
-                //         Select::make('branch_id')
-                //             ->label('ترحيل إلى فرع')
-                //             ->options(Branch::pluck('name', 'id'))
-                //             ->default(fn($record) => $record?->branch_id) //  الفرع الحالي
-                //             ->searchable()
-                //             ->preload(),
-
-                //         Select::make('franchise_id')
-                //             ->label('ترحيل إلى فرانشايز')
-                //             ->options(Franchise::pluck('name', 'id'))
-                //             ->default(fn($record) => $record?->franchise_id) //  الفرانشايز الحالي
-                //             ->searchable()
-                //             ->preload(),
-
-                //         Select::make('client_id')
-                //             ->label('ترحيل إلى عميل')
-                //             ->options(Client::pluck('name', 'id'))
-                //             ->default(fn($record) => $record?->client_id) //  العميل الحالي
-                //             ->searchable()
-                //             ->preload(),
-
-                //         Select::make('supplier_id')
-                //             ->label('ترحيل إلى مورد')
-                //             ->options(Supplier::pluck('name', 'id'))
-                //             ->default(fn($record) => $record?->supplier_id) //  المورد الحالي
-                //             ->searchable()
-                //             ->preload(),
-                //     ])
-                //     ->action(function ($record, array $data) {
-                //         if (!empty($data['branch_id'])) {
-                //             $record->branch_id = $data['branch_id'];
-                //         }
-                //         if (!empty($data['franchise_id'])) {
-                //             $record->franchise_id = $data['franchise_id'];
-                //         }
-                //         if (!empty($data['client_id'])) {
-                //             $record->client_id = $data['client_id'];
-                //         }
-                //         if (!empty($data['supplier_id'])) {
-                //             $record->supplier_id = $data['supplier_id'];
-                //         }
-                //         $record->save();
-                //         Notification::make()
-                //             ->title('تم ترحيل التذكرة')
-                //             ->success()
-                //             ->send();
-                //     })
-                //     ->requiresConfirmation()
-                //     ->modalHeading('ترحيل التذكرة')
-                //     ->modalButton('تنفيذ الترحيل')
-                //     ->color('warning'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -344,7 +295,7 @@ class TicketsTable
                             foreach ($records as $record) {
                                 $record->client_id = $data['client_id'];
                                 $record->save();
-                               AccountStatement::logTicket($record, Client::class, $data['client_id']);
+                                AccountStatement::logTicket($record, Client::class, $data['client_id']);
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لعميل')
@@ -375,7 +326,7 @@ class TicketsTable
                             foreach ($records as $record) {
                                 $record->supplier_id = $data['supplier_id'];
                                 $record->save();
-                               AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], true);
+                                AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], true);
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لمورد')
@@ -473,8 +424,143 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
+// ///////////////////
 
-
+                        Action::make('addInvoice')
+                        ->label('اضافة فاتورة')
+                        ->icon('heroicon-o-document-text')
+                        ->schema([
+                            Repeater::make('tickets')
+                                ->label('تفاصيل التذاكر')
+                                ->schema([
+                                    Grid::make(2)
+                                        ->schema([
+                                            TextInput::make('ticket_number_core')
+                                                ->label('رقم التذكرة')
+                                                ->disabled()
+                                                ->dehydrated(),
+                    
+                                            TextInput::make('airline_name')
+                                                ->label('الخطوط الجوية')
+                                                ->disabled()
+                                                ->dehydrated(),
+                    
+                                            TextInput::make('total_taxes')
+                                                ->label('إجمالي الضرائب')
+                                                ->disabled()
+                                                ->dehydrated(),
+                    
+                                            TextInput::make('sale_total_amount')
+                                                ->label('سعر البيع')
+                                                ->disabled()
+                                                ->dehydrated(),
+                                        ]),
+                                ])
+                                ->default(function ($livewire) {
+                                    $selectedRecords = $livewire->getSelectedTableRecords();
+                    
+                                    if (empty($selectedRecords)) {
+                                        return [];
+                                    }
+                    
+                                    return $selectedRecords->map(function ($ticket) {
+                                        $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                    
+                                        return [
+                                            'ticket_number_core' => $ticket->ticket_number_core,
+                                            'airline_name'       => $ticket->airline_name,
+                                            'total_taxes'        => number_format($totalTaxes, 2),
+                                            'sale_total_amount'  => number_format($ticket->sale_total_amount, 2),
+                                        ];
+                                    })->toArray();
+                                })
+                                ->reorderable(false)
+                                ->addable(false)
+                                ->deletable(false)
+                                ->columnSpanFull(),
+                    
+                            Select::make('statementable_type')
+                                ->label('نوع الجهة')
+                                ->options([
+                                    Client::class    => 'عميل',
+                                    Supplier::class  => 'مورد',
+                                    Branch::class    => 'فرع',
+                                    Franchise::class => 'فرانشايز',
+                                ])
+                                ->searchable()
+                                ->native(false)
+                                ->live()
+                                ->required()
+                                ->afterStateUpdated(fn($set) => $set('statementable_id', null)),
+                    
+                            Select::make('statementable_id')
+                                ->label('الجهة')
+                                ->options(function (callable $get) {
+                                    $type = $get('statementable_type');
+                                    if (!$type) {
+                                        return [];
+                                    }
+                    
+                                    return match ($type) {
+                                        Client::class    => Client::pluck('name', 'id')->toArray(),
+                                        Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
+                                        Branch::class    => Branch::pluck('name', 'id')->toArray(),
+                                        Franchise::class => Franchise::pluck('name', 'id')->toArray(),
+                                        default          => [],
+                                    };
+                                })
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('اختر الجهة أولاً من نوع الجهة')
+                                ->required()
+                                ->disabled(fn(callable $get) => !$get('statementable_type')),
+                    
+                            Textarea::make('notes')
+                                ->label('ملاحظات')
+                                ->columnSpanFull(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            // اجمالي الضرائب و المبالغ
+                            $totalTaxes  = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
+                            $totalAmount = $records->sum('sale_total_amount');
+                    
+                            // رقم الفاتورة (تلقائي مثلاً: INV-2025-00001)
+                            $lastInvoiceId   = \App\Models\Invoice::max('id') ?? 0;
+                            $invoiceNumber   = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
+                    
+                            // إنشاء الفاتورة
+                            $invoice = Invoice::create([
+                                'type'          => 'sale',
+                                'is_drafted'    => false,
+                                'total_taxes'   => $totalTaxes,
+                                'total_amount'  => $totalAmount,
+                                'invoice_number'=> $invoiceNumber,
+                                'notes'         => $data['notes'] ?? null,
+                                'invoiceable_type' => $data['statementable_type'],
+                                'invoiceable_id' => $data['statementable_id'],
+                            ]);
+                    
+                            // ربط التذاكر مع الفاتورة في جدول pivot
+                            foreach ($records as $ticket) {
+                                $invoice->tickets()->attach($ticket->id);
+                            }
+                            
+                            Ticket::where('id', $records->pluck('id'))->update(['is_invoiced' => true]);
+                    
+                            Notification::make()
+                                ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalWidth('4xl')
+                        ->modalHeading('إضافة فاتورة')
+                        ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->color('success')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords()
+                    
                 ]),
             ]);
     }

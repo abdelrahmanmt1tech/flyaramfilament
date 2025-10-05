@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Exports\AccountStatementExporter;
 use App\Models\AccountStatement;
 use App\Models\Client;
 use App\Models\Supplier;
@@ -11,6 +12,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
@@ -74,7 +76,7 @@ class AccountStatementPage extends Page implements HasTable
 
                 TextColumn::make('passengers')
                     ->label('المسافر')
-                    ->getStateUsing(fn($record) => is_array($record->passengers) ? implode(', ', $record->passengers) : $record->passengers),
+                    ->getStateUsing(fn($record) => $record->passengers->pluck('first_name')->implode(', ')),
 
                 TextColumn::make('sector')
                     ->label('القطاع'),
@@ -223,6 +225,7 @@ class AccountStatementPage extends Page implements HasTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    ExportBulkAction::make()->exporter(AccountStatementExporter::class),
                     DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),

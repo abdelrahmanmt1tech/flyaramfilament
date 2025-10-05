@@ -12,17 +12,43 @@ class Ticket extends Model
 
 
     protected $fillable = [
-        'gds', 'airline_name', 'validating_carrier_code',
-        'ticket_number_full', 'ticket_number_prefix', 'ticket_number_core', 'pnr',
-        'issue_date', 'booking_date',
-        'ticket_type', 'ticket_type_code', 'trip_type', 'is_domestic_flight',
-        'itinerary_string', 'fare_basis_out', 'fare_basis_in',
-        'branch_code', 'office_id', 'created_by_user',
-        'airline_id', 'currency_id', 'supplier_id', 'sales_user_id', 'client_id', 'branch_id',
-        'cost_base_amount', 'cost_tax_amount', 'cost_total_amount',
-        'profit_amount', 'discount_amount', 'extra_tax_amount', 'sale_total_amount',
-        'carrier_pnr_carrier', 'carrier_pnr', 'price_taxes_breakdown',
-        'franchise_id','tax_type_id'
+        'gds',
+        'airline_name',
+        'validating_carrier_code',
+        'ticket_number_full',
+        'ticket_number_prefix',
+        'ticket_number_core',
+        'pnr',
+        'issue_date',
+        'booking_date',
+        'ticket_type',
+        'ticket_type_code',
+        'trip_type',
+        'is_domestic_flight',
+        'itinerary_string',
+        'fare_basis_out',
+        'fare_basis_in',
+        'branch_code',
+        'office_id',
+        'created_by_user',
+        'airline_id',
+        'currency_id',
+        'supplier_id',
+        'sales_user_id',
+        'client_id',
+        'branch_id',
+        'cost_base_amount',
+        'cost_tax_amount',
+        'cost_total_amount',
+        'profit_amount',
+        'discount_amount',
+        'extra_tax_amount',
+        'sale_total_amount',
+        'carrier_pnr_carrier',
+        'carrier_pnr',
+        'price_taxes_breakdown',
+        'franchise_id',
+        'tax_type_id'
     ];
 
     protected $casts = [
@@ -75,24 +101,15 @@ class Ticket extends Model
     }
 
 
-    // منطق التسعير: افتراضيًا البيع = التكلفة الشاملة
-    protected static function booted()
+
+
+
+    public function passengers()
     {
-        static::saving(function (Ticket $t) {
-                $t->sale_total_amount = ($t->cost_total_amount ?? 0)
-                    + ($t->extra_tax_amount ?? 0)
-                    + ($t->profit_amount ?? 0)
-                    - ($t->discount_amount ?? 0);
-        });
+        return $this->belongsToMany(Passenger::class, 'ticket_passengers')
+            ->withPivot(['ticket_number_full', 'ticket_number_prefix', 'ticket_number_core'])
+            ->withTimestamps();
     }
-
-
-    // public function passengers()
-    // {
-    //     return $this->belongsToMany(Passenger::class, 'ticket_passengers')
-    //         ->withPivot(['ticket_number_full', 'ticket_number_prefix', 'ticket_number_core'])
-    //         ->withTimestamps();
-    // }
 
     public function franchise()
     {
@@ -107,6 +124,54 @@ class Ticket extends Model
     public function accountStatements()
     {
         return $this->morphMany(AccountStatement::class, 'statementable');
+    }
+
+
+    public function createAccountTax()
+    {
+       
+        if ($this->tax_type_id && $this->tax_type_id !== 1) {
+            AccountTax::updateOrCreate(
+                ['ticket_id' => $this->id, 'type' => 'sales_tax'],
+                [
+                    'tax_percentage' => $this->taxType()->value('value') ?? 0,
+                    'tax_value'      => $this->extra_tax_amount ?? 0,
+                    'tax_types_id'   => $this->tax_type_id,
+                    'is_returned'    => false,
+                ]
+            );
+        }
+    
+       
+        if ($this->is_domestic_flight) {
+            $percentage = TaxType::where('id', 1)->value('value') ?? 15;
+            $value = max($this->sale_total_amount, $this->cost_total_amount) 
+            * ($percentage / (100 + $percentage)); // todo: check this
+    
+            AccountTax::updateOrCreate(
+                ['ticket_id' => $this->id, 'type' => 'purchase_tax'],
+                [
+                    'tax_percentage' => $percentage,
+                    'tax_value'      => $value,
+                    'is_returned'    => false,
+                ]
+            );
+        }
+    }
+
+
+    protected static function booted()
+    {
+        static::saving(function (Ticket $t) {
+            $t->sale_total_amount = ($t->cost_total_amount ?? 0)
+                + ($t->extra_tax_amount ?? 0)
+                + ($t->profit_amount ?? 0)
+                - ($t->discount_amount ?? 0);
+        });
+
+        static::saved(function (Ticket $t) {
+            $t->createAccountTax();
+        });
     }
     
 }

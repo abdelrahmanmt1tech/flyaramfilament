@@ -73,10 +73,17 @@ class TaxTypeResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-                RestoreAction::make(),
-                ForceDeleteAction::make(),
+                EditAction::make()
+                    ->visible(fn ($record) => $record->id !== 1),
+            
+                DeleteAction::make()
+                    ->visible(fn ($record) => $record->id !== 1),
+            
+                // RestoreAction::make()
+                //     ->visible(fn ($record) => $record->id !== 1),
+            
+                // ForceDeleteAction::make()
+                //     ->visible(fn ($record) => $record->id !== 1),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
