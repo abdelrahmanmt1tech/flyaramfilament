@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'iata_code',
     ];
 
     /**
@@ -50,6 +51,16 @@ class User extends Authenticatable
     public function contactInfos()
     {
         return $this->morphMany(\App\Models\ContactInfo::class, 'contactable');
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class);
+    }
+
+    public function franchises()
+    {
+        return $this->belongsToMany(Franchise::class);
     }
 
 }

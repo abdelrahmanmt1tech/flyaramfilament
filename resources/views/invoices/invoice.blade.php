@@ -149,13 +149,40 @@
             <hr>
         @endif
 
-        <h3 class="section-title">Airline Details</h3>
+        <h3 class="section-title">Ticket Details</h3>
         <table>
             <tr>
                 <th>Airline Name</th>
-                <td>{{ $ticket->airline->name ?? $ticket->airline_name }}  ({{ $ticket->airline->iata_code ?? '' }})</td>
+                <td>{{ $ticket->airline->name ?? $ticket->airline_name }} ({{ $ticket->airline->iata_code ?? '' }})</td>
+                
                 <th>Airline Code</th>
                 <td>{{ $ticket->airline->iata_prefix ?? $ticket->validating_carrier_code ?? '' }}</td>
+            </tr>
+            <tr>
+                <th>Ticket Number</th>
+                <td>{{ $ticket->ticket_number_full ?? '' }}</td>
+    
+                <th>Issue Date</th>
+                <td>{{ $ticket->issue_date ? $ticket->issue_date->format('Y-m-d') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Itinerary</th>
+                <td colspan="3">
+                    @if($ticket->segments->count() > 0)
+                        {{ $ticket->segments->pluck('origin.iata')->join(' → ') }}
+                        →
+                        {{ $ticket->segments->last()->destination->iata }}
+                    @else
+                        {{ $ticket->itinerary_string ?? 'N/A' }}
+                    @endif
+                </td>
+            </tr>
+            <tr>
+                <th>Beneficiary</th>
+                <td>{{ $ticket->client->name ?? 'N/A' }}</td>
+    
+                <th>PNR</th>
+                <td>{{ $ticket->pnr ?? '' }}</td>
             </tr>
         </table>
 
@@ -190,8 +217,6 @@
                     <tr>
                         <th>Flight Number</th>
                         <td>{{ $segment->flight_number ?? '' }}</td>
-                        <th></th>
-                        <td></td>
                     </tr>
                 </table>
             @endforeach
@@ -256,17 +281,28 @@
                 <td>CASH</td>
                 <th>Supplier</th>
                 <td>{{ $ticket->supplier->name ?? 'N/A' }}</td>
-                <th>Invoice Number</th>
-                <td>{{ $invoice->invoice_number ?? '' }}</td>
-                <th>Invoice Date</th>
-                <td>{{ $invoice->created_at ? $invoice->created_at->format('Y-m-d') : '' }}</td>
-                <th>Due Date</th>
-                <td>{{ $invoice->due_date ? $invoice->due_date->format('Y-m-d') : '' }}</td>
-        
             </tr>
         </table>
         <div class="break_page"></div>
     @endforeach
+
+    <h3 class="section-title">Invoice Details</h3>
+    <table>
+        <tr>
+            <th>Invoice Number</th>
+            <td>{{ $invoice->invoice_number ?? '' }}</td>
+            <th>Invoice Date</th>
+            <td>{{ $invoice->created_at ? $invoice->created_at->format('Y-m-d') : '' }}</td>
+            <th>Due Date</th>
+            <td>{{ $invoice->due_date ? $invoice->due_date->format('Y-m-d') : '' }}</td>
+        </tr>
+        <tr>
+            <th>Total Taxes</th>
+            <td colspan="2">{{ number_format($invoice->total_taxes ?? 0, 2) }}</td>
+            <th>Total Amount</th>
+            <td colspan="2">{{ number_format($invoice->total_amount ?? 0, 2) }}</td>
+        </tr>
+    </table>
 
 </div>
 
