@@ -11,6 +11,8 @@ class Client extends Model
 {
     use SoftDeletes;
 
+    use HasTranslations; 
+    
     protected $fillable = [
         'name',
         'company_name',
@@ -29,7 +31,6 @@ class Client extends Model
 
 
 
-    use HasTranslations;
     public $translatable = ['name','company_name','address'];
 
     public function leadSource()

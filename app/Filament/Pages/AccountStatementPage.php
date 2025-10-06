@@ -8,6 +8,8 @@ use App\Models\Client;
 use App\Models\Supplier;
 use App\Models\Branch;
 use App\Models\Franchise;
+use App\Models\Invoice;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -18,7 +20,11 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -87,7 +93,7 @@ class AccountStatementPage extends Page implements HasTable
                     ->sortable()
                     ->color('danger')
                     ->summarize([
-                       Sum::make()
+                        Sum::make()
                             ->label('إجمالي المدين')
                             ->numeric()
                     ]),
@@ -98,7 +104,7 @@ class AccountStatementPage extends Page implements HasTable
                     ->sortable()
                     ->color('success')
                     ->summarize([
-                       Sum::make()
+                        Sum::make()
                             ->label('إجمالي الدائن')
                             ->numeric()
                     ]),
@@ -109,7 +115,7 @@ class AccountStatementPage extends Page implements HasTable
                     ->sortable()
                     ->color(fn($state) => $state < 0 ? 'danger' : 'success')
                     ->summarize([
-                       Summarizer::make()
+                        Summarizer::make()
                             ->label('الرصيد الإجمالي')
                             ->using(function ($query) {
                                 $totalDebit  = $query->sum('debit');
@@ -218,17 +224,166 @@ class AccountStatementPage extends Page implements HasTable
                     })
             ])
             ->recordActions([
+                Action::make('showInvoice')
+                    ->label('عرض الفاتورة')
+                    ->icon('heroicon-o-eye')
+                    ->color('success')
+                    ->visible(fn($record) => $record->invoices()->exists()) // يظهر فقط لو فيه فاتورة
+                    ->url(fn($record) => route('invoices.print', $record->invoices()->first()->id))
+                    ->openUrlInNewTab(),
+                //    ----------------------------------------------------------
+                Action::make('addInvoice')
+                    ->label('إضافة فاتورة')
+                    ->icon('heroicon-o-plus')
+                    ->color('success')
+                    ->visible(fn($record) => !$record->invoices()->exists())
+                    ->schema([
+                        // عرض بيانات التذكرة
+                        Grid::make(2)
+                            ->schema([
+                                TextInput::make('ticket_number_core')
+                                    ->label('رقم التذكرة')
+                                    ->default(fn($record) => $record->ticket->ticket_number_core ?? '')
+                                    ->disabled()
+                                    ->dehydrated(),
+
+                                TextInput::make('airline_name')
+                                    ->label('الخطوط الجوية')
+                                    ->default(fn($record) => $record->ticket->airline_name ?? '')
+                                    ->disabled()
+                                    ->dehydrated(),
+
+                                TextInput::make('total_taxes')
+                                    ->label('إجمالي الضرائب')
+                                    ->default(function ($record) {
+                                        $ticket = $record->ticket;
+                                        if (!$ticket) return '0.00';
+
+                                        $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                                        return number_format($totalTaxes, 2);
+                                    })
+                                    ->disabled()
+                                    ->dehydrated(),
+
+                                TextInput::make('sale_total_amount')
+                                    ->label('سعر البيع')
+                                    ->default(fn($record) => number_format($record->ticket->sale_total_amount ?? 0, 2))
+                                    ->disabled()
+                                    ->dehydrated(),
+                            ]),
+
+                        // نوع الجهة
+                        Select::make('statementable_type')
+                            ->label('نوع الجهة')
+                            ->options([
+                                Client::class    => 'عميل',
+                                Supplier::class  => 'مورد',
+                                Branch::class    => 'فرع',
+                                Franchise::class => 'فرانشايز',
+                            ])
+                            ->default(fn($record) => $record->statementable_type)
+                            ->native(false)
+                            ->required()
+                            ->disabled(),
+
+                        // الجهة
+                        Select::make('statementable_id')
+                            ->label('الجهة')
+                            ->options(function (callable $get) {
+                                $type = $get('statementable_type');
+                                if (!$type) {
+                                    return [];
+                                }
+
+                                return match ($type) {
+                                    Client::class    => Client::pluck('name', 'id')->toArray(),
+                                    Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
+                                    Branch::class    => Branch::pluck('name', 'id')->toArray(),
+                                    Franchise::class => Franchise::pluck('name', 'id')->toArray(),
+                                    default          => [],
+                                };
+                            })
+                            ->default(fn($record) => $record->statementable_id)
+                            // ->searchable()
+                            ->native(false)
+                            // ->placeholder('اختر الجهة أولاً من نوع الجهة')
+                            ->required()
+                            ->disabled(),
+
+                        // ملاحظات
+                        Textarea::make('notes')
+                            ->label('ملاحظات')
+                            ->columnSpanFull(),
+                    ])
+                    ->action(function ($record, array $data) {
+                        // التحقق من وجود فاتورة مسبقاً
+                        if ($record->invoices()->exists()) {
+                            Notification::make()
+                                ->title('هذه التذكرة عليها فاتورة بالفعل')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // الحصول على التذكرة المرتبطة
+                        $ticket = $record->ticket;
+                        if (!$ticket) {
+                            Notification::make()
+                                ->title('لا توجد تذكرة مرتبطة')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // حساب القيم
+                        $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                        $totalAmount = $ticket->sale_total_amount ?? 0;
+
+                        // إنشاء رقم الفاتورة
+                        $lastInvoiceId = Invoice::max('id') ?? 0;
+                        $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
+
+                        // إنشاء الفاتورة
+                        $invoice = Invoice::create([
+                            'type' => 'sale',
+                            'is_drafted' => false,
+                            'total_taxes' => $totalTaxes,
+                            'total_amount' => $totalAmount,
+                            'invoice_number' => $invoiceNumber,
+                            'notes' => $data['notes'] ?? null,
+                            'invoiceable_type' => $record->statementable_type,
+                            'invoiceable_id' => $record->statementable_id,
+                        ]);
+
+                        // ربط التذكرة بالفاتورة
+                        $invoice->tickets()->attach($ticket->id);
+
+                        // تحديث حالة التذكرة
+                        $ticket->update(['is_invoiced' => true]);
+
+                        Notification::make()
+                            ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalWidth('4xl')
+                    ->modalHeading('إضافة فاتورة')
+                    ->modalSubmitActionLabel('إنشاء الفاتورة'),
+                //    ----------------------------------------------------------
+
+
                 EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     ExportBulkAction::make()->exporter(AccountStatementExporter::class),
                     DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    // RestoreBulkAction::make(),
+                    // ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

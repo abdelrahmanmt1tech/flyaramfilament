@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('invoice_number')->unique();
 
             $table->text('notes')->nullable();
+
+            $table->date('due_date')->nullable()->default(now());
         
             $table->timestamps();
         });

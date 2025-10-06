@@ -142,8 +142,10 @@ class ClientResource extends Resource
                     ->label(__('dashboard.fields.sales_rep'))
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('lead_source_id')
-                    ->label(__('dashboard.fields.lead_source')),
+                    TextColumn::make('leadSource.name')
+                    ->label(__('dashboard.fields.lead_source'))
+                    ->sortable()
+                    ->searchable(),
             ])
             ->filters([
                 TrashedFilter::make(),

@@ -209,6 +209,12 @@ class TicketsTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                Action::make('viewInvoice')
+                    ->label('عرض الفاتورة')
+                    ->icon('heroicon-o-document-text')
+                    ->visible(fn($record) => $record->invoices()->exists())
+                    ->url(fn($record) => route('invoices.print', $record->invoices()->first()->id))
+                    ->openUrlInNewTab(),
                 ViewAction::make(),
                 EditAction::make(),
             ])
@@ -221,7 +227,7 @@ class TicketsTable
                     Action::make('bulkMigrateBranch')
                         ->label('ترحيل للفرع')
                         ->icon('heroicon-o-building-office')
-                        ->form([
+                        ->schema([
                             Select::make('branch_id')
                                 ->label('اختر الفرع')
                                 ->options(Branch::pluck('name', 'id'))
@@ -252,7 +258,7 @@ class TicketsTable
                     Action::make('bulkMigrateFranchise')
                         ->label('ترحيل للفرانشايز')
                         ->icon('heroicon-o-building-storefront')
-                        ->form([
+                        ->schema([
                             Select::make('franchise_id')
                                 ->label('اختر الفرانشايز')
                                 ->options(Franchise::pluck('name', 'id'))
@@ -283,7 +289,7 @@ class TicketsTable
                     Action::make('bulkMigrateClient')
                         ->label('ترحيل للعميل')
                         ->icon('heroicon-o-user')
-                        ->form([
+                        ->schema([
                             Select::make('client_id')
                                 ->label('اختر العميل')
                                 ->options(Client::pluck('name', 'id'))
@@ -314,7 +320,7 @@ class TicketsTable
                     Action::make('bulkMigrateSupplier')
                         ->label('ترحيل للمورد')
                         ->icon('heroicon-o-truck')
-                        ->form([
+                        ->schema([
                             Select::make('supplier_id')
                                 ->label('اختر المورد')
                                 ->options(Supplier::pluck('name', 'id'))
@@ -343,7 +349,7 @@ class TicketsTable
                     Action::make('bulkEditProfitAndDiscount')
                         ->label('تعديل الربح والخصم')
                         ->icon('heroicon-o-currency-dollar')
-                        ->form([
+                        ->schema([
                             // Profit field
                             TextInput::make('profit_amount')
                                 ->label('تعديل الربح')
@@ -420,13 +426,13 @@ class TicketsTable
                         ->requiresConfirmation()
                         ->modalHeading('تعديل الربح والخصم')
                         ->modalButton('تنفيذ التعديل')
-                        ->color('warning')
+                        ->color('info')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
-// ///////////////////
+                    // ///////////////////
 
-                        Action::make('addInvoice')
+                    Action::make('addInvoice')
                         ->label('اضافة فاتورة')
                         ->icon('heroicon-o-document-text')
                         ->schema([
@@ -439,17 +445,17 @@ class TicketsTable
                                                 ->label('رقم التذكرة')
                                                 ->disabled()
                                                 ->dehydrated(),
-                    
+
                                             TextInput::make('airline_name')
                                                 ->label('الخطوط الجوية')
                                                 ->disabled()
                                                 ->dehydrated(),
-                    
+
                                             TextInput::make('total_taxes')
                                                 ->label('إجمالي الضرائب')
                                                 ->disabled()
                                                 ->dehydrated(),
-                    
+
                                             TextInput::make('sale_total_amount')
                                                 ->label('سعر البيع')
                                                 ->disabled()
@@ -458,14 +464,14 @@ class TicketsTable
                                 ])
                                 ->default(function ($livewire) {
                                     $selectedRecords = $livewire->getSelectedTableRecords();
-                    
+
                                     if (empty($selectedRecords)) {
                                         return [];
                                     }
-                    
+
                                     return $selectedRecords->map(function ($ticket) {
                                         $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-                    
+
                                         return [
                                             'ticket_number_core' => $ticket->ticket_number_core,
                                             'airline_name'       => $ticket->airline_name,
@@ -478,7 +484,7 @@ class TicketsTable
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columnSpanFull(),
-                    
+
                             Select::make('statementable_type')
                                 ->label('نوع الجهة')
                                 ->options([
@@ -492,7 +498,7 @@ class TicketsTable
                                 ->live()
                                 ->required()
                                 ->afterStateUpdated(fn($set) => $set('statementable_id', null)),
-                    
+
                             Select::make('statementable_id')
                                 ->label('الجهة')
                                 ->options(function (callable $get) {
@@ -500,7 +506,7 @@ class TicketsTable
                                     if (!$type) {
                                         return [];
                                     }
-                    
+
                                     return match ($type) {
                                         Client::class    => Client::pluck('name', 'id')->toArray(),
                                         Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
@@ -514,39 +520,51 @@ class TicketsTable
                                 ->placeholder('اختر الجهة أولاً من نوع الجهة')
                                 ->required()
                                 ->disabled(fn(callable $get) => !$get('statementable_type')),
-                    
+
                             Textarea::make('notes')
                                 ->label('ملاحظات')
                                 ->columnSpanFull(),
                         ])
                         ->action(function ($records, array $data) {
-                            // اجمالي الضرائب و المبالغ
+
+                            $records = $records->reject(fn($t) => $t->is_invoiced);
+
+
+                            if ($records->isEmpty()) {
+                                Notification::make()
+                                    ->title('كل التذاكر المحددة عليها فواتير بالفعل')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+
                             $totalTaxes  = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
                             $totalAmount = $records->sum('sale_total_amount');
-                    
-                            // رقم الفاتورة (تلقائي مثلاً: INV-2025-00001)
-                            $lastInvoiceId   = \App\Models\Invoice::max('id') ?? 0;
+
+
+                            $lastInvoiceId   = Invoice::max('id') ?? 0;
                             $invoiceNumber   = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-                    
-                            // إنشاء الفاتورة
+
+
                             $invoice = Invoice::create([
                                 'type'          => 'sale',
                                 'is_drafted'    => false,
                                 'total_taxes'   => $totalTaxes,
                                 'total_amount'  => $totalAmount,
-                                'invoice_number'=> $invoiceNumber,
+                                'invoice_number' => $invoiceNumber,
                                 'notes'         => $data['notes'] ?? null,
                                 'invoiceable_type' => $data['statementable_type'],
                                 'invoiceable_id' => $data['statementable_id'],
                             ]);
-                    
-                            // ربط التذاكر مع الفاتورة في جدول pivot
+
+
                             foreach ($records as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
                             }
-                            
-                            Ticket::where('id', $records->pluck('id'))->update(['is_invoiced' => true]);
-                    
+
+                            Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
+
                             Notification::make()
                                 ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)
                                 ->success()
@@ -560,7 +578,7 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                    
+
                 ]),
             ]);
     }

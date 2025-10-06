@@ -8,7 +8,7 @@ class Invoice extends Model
 {
     
     protected $fillable = [
-        'type', 'is_drafted', 'total_taxes', 'total_amount', 'invoice_number', 'notes', 'invoiceable_type', 'invoiceable_id',
+        'type', 'is_drafted', 'total_taxes', 'total_amount', 'invoice_number', 'due_date', 'notes', 'invoiceable_type', 'invoiceable_id',
     ];
 
     protected $casts = [

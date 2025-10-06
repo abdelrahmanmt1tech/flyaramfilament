@@ -48,7 +48,8 @@ class Ticket extends Model
         'carrier_pnr',
         'price_taxes_breakdown',
         'franchise_id',
-        'tax_type_id'
+        'tax_type_id',
+        'is_invoiced',
     ];
 
     protected $casts = [
@@ -173,5 +174,12 @@ class Ticket extends Model
             $t->createAccountTax();
         });
     }
+
+
+    public function invoices()
+    {
+        return $this->belongsToMany(Invoice::class, 'invoice_ticket');
+    }
+    
     
 }

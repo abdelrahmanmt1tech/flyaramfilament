@@ -17,7 +17,7 @@ class AccountStatement extends Model
         'doc_no',
         'ticket_id',
         'lpo_no',
-        'passengers',
+        // 'passengers',
         'sector',
         'debit',
         'credit',
@@ -67,7 +67,7 @@ class AccountStatement extends Model
             'date'               => now(),
             'doc_no'             => $record->ticket_number_core,
             'ticket_id'          => $record->id,
-            'passengers'          => $record->passengers()->pluck('first_name')->implode(', '),
+            // 'passengers'          => $record->passengers()->pluck('first_name')->implode(', '),
             // 'sector'             => $record->itinerary_string,
             'debit'              => $isSupplier ? 0 : $record->sale_total_amount,
             'credit'             => $isSupplier ? $record->sale_total_amount : 0,
@@ -85,5 +85,27 @@ class AccountStatement extends Model
         return $this->hasManyThrough(Passenger::class, TicketPassenger::class , 'ticket_id', 'id', 'ticket_id', 'passenger_id');
     }
 
+    // public function invoices()
+    // {
+    //     return $this->hasManyThrough(
+    //         Invoice::class,
+    //         Ticket::class,
+    //         'id', // المفتاح في tickets
+    //         'id', // المفتاح في invoices
+    //         'ticket_id', // المفتاح في account_statements
+    //         'id' // المفتاح في tickets
+    //     );
+    // }
 
+    public function invoices()
+{
+    return $this->belongsToMany(
+        Invoice::class,
+        'invoice_ticket',
+        'ticket_id',  // المفتاح في جدول pivot
+        'invoice_id', // المفتاح في جدول pivot
+        'ticket_id',  // المفتاح في account_statements
+        'id'          // المفتاح في tickets
+    );
+}
 }
