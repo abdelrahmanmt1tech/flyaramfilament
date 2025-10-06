@@ -189,17 +189,21 @@ class ClientResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name', 'email', 'salesRep.name'];
+        return ['name', 'salesRep.name'];
     }
+
+
+
+
+
+
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         $details = [];
-
         if ($record->salesRep) {
             $details['SalesRep'] = $record->salesRep->name;
         }
-
         return $details;
     }
 }

@@ -256,6 +256,12 @@ class TicketParser
             'JEDDAH','RIYADH','DAMMAM','MADINAH','GASSIM',
         ];
 
+
+        // todo  25
+
+
+
+
         if (empty($dto->segments)) {
             return false; // بدون مقاطع نعتبرها ليست داخلية
         }

@@ -9,6 +9,7 @@ use App\Models\Currency;
 use App\Models\Passenger;
 use App\Models\Supplier;
 use App\Models\Ticket;
+use App\Models\User;
 use App\Services\Tickets\TicketParser;
 use DB;
 use Filament\Actions\Action;
@@ -34,15 +35,13 @@ class UploadTicket extends Page
     {
         return __('dashboard.sidebar.upload_tickets');
     }
-    
+
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.upload_tickets');
     }
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::CloudArrowUp;
-
-
 
 
     /*    public function onboardingAction(): Action
@@ -112,10 +111,14 @@ class UploadTicket extends Page
             // 2) مسار الملف على القرص
             $disk = Storage::disk('public');
             $relativePath = $data['text_file'];                   // مثال: uploads/tickets/abc.zip
-            $absPath      = $disk->path($relativePath);
-            $ext          = strtolower(pathinfo($absPath, PATHINFO_EXTENSION));
+            $absPath = $disk->path($relativePath);
+            $ext = strtolower(pathinfo($absPath, PATHINFO_EXTENSION));
 
             $parser = new TicketParser();
+
+            $TICKETS_USERS = [];
+            $NEW_USERS = [];
+
 
             try {
 
@@ -145,6 +148,9 @@ class UploadTicket extends Page
                         }
                         $dto = $parser->parse($content);
                         $this->storeTicketDto($dto, basename($name));
+                        if ($dto->createdByUser)
+                            $TICKETS_USERS [] = $dto->createdByUser;
+
                     }
                     $zip->close();
                 } else {
@@ -162,7 +168,26 @@ class UploadTicket extends Page
                     }
                     $dto = $parser->parse($content);
                     $this->storeTicketDto($dto, basename($absPath));
+
+
+                    if ($dto->createdByUser)
+                        $TICKETS_USERS [] = $dto->createdByUser;
+
+
                 }
+
+
+                $TICKETS_USERS = array_unique($TICKETS_USERS);
+                if ($TICKETS_USERS) {
+                    $OLD_USERS = User::whereIn('id', $TICKETS_USERS)->pluck("iata_code")->toArray();
+                    foreach ($TICKETS_USERS as $user) {
+                        if (!in_array($user, $OLD_USERS)) {
+                            $NEW_USERS[] = $user;
+                        }
+                    }
+                }
+
+
 
                 /*
 
@@ -178,6 +203,14 @@ class UploadTicket extends Page
                     ->title(__('dashboard.upload_ticket.messages.import_success'))
                     ->send();
 
+
+                if ($NEW_USERS) {
+                    session()->put("NEW_USERS" , $NEW_USERS);
+                    redirect()->route('filament.admin.pages.new-users');
+                }
+
+
+
             } catch (\Throwable $e) {
                 report($e);
                 Notification::make()
@@ -186,10 +219,14 @@ class UploadTicket extends Page
                     ->send();
             }
 
+
+
+
+
+
         }
 
     }
-
 
 
     protected function storeTicketDto(\App\Services\Tickets\DTOs\TicketDTO $dto, ?string $sourceFileName = null): void
@@ -206,7 +243,8 @@ class UploadTicket extends Page
 
 */
 
-        DB::transaction(function() use ($dto) {
+
+        DB::transaction(function () use ($dto) {
             $ticket = Ticket::create([
                 'gds' => $dto->gds,
                 'airline_name' => $dto->airlineName,
@@ -227,26 +265,28 @@ class UploadTicket extends Page
                 'branch_code' => $dto->branchCode,
                 'office_id' => $dto->officeId,
                 'created_by_user' => $dto->createdByUser,
-                'supplier_id' =>$dto->supplier ?  optional(Supplier::firstOrCreate(['name'=>$dto->supplier], ['tax_number'=>null]))->id  : null ,
+                'supplier_id' => $dto->supplier ? optional(Supplier::firstOrCreate(['name' => $dto->supplier], ['tax_number' => null]))->id : null,
                 'currency_id' => $dto->price?->baseCurrency ?
-                    optional(Currency::firstOrCreate(['symbol'=> $dto->price->baseCurrency] ,['name'=> $dto->price->baseCurrency])->first())->id : null,
+                    optional(Currency::firstOrCreate(['symbol' => $dto->price->baseCurrency], ['name' => $dto->price->baseCurrency])->first())->id : null,
                 'cost_base_amount' => $dto->price->baseAmount,
-                'cost_tax_amount' => collect($dto->price->taxes)->sum(fn($t)=> (float)$t['amount']),
+                'cost_tax_amount' => collect($dto->price->taxes)->sum(fn($t) => (float)$t['amount']),
                 'cost_total_amount' => $dto->price->totalAmount,
                 // profit/discount/extra_tax يضيفهم الأدمن لاحقًا أو ندعهم null
             ]);
+
+
             // passengers
             foreach ($dto->passengers as $p) {
                 $passenger = Passenger::firstOrCreate(
                     [
-                        'first_name' => $p->fullName ,
-                        'last_name' => $p->lastName ,
-                        'phone'=>$p->phone ,
+                        'first_name' => $p->fullName,
+                        'last_name' => $p->lastName,
+                        'phone' => $p->phone,
                     ],
                     [
-                        'title'=>$p->title,
-                        'first_name'=>$p->firstName, 'last_name'=>$p->lastName,
-                        'email'=>$p->email, 'phone'=>$p->phone,
+                        'title' => $p->title,
+                        'first_name' => $p->firstName, 'last_name' => $p->lastName,
+                        'email' => $p->email, 'phone' => $p->phone,
 
                     ]
                 );
@@ -261,11 +301,11 @@ class UploadTicket extends Page
             // segments + routes + airports
             foreach ($dto->segments as $idx => $s) {
 
-                $o = Airport::firstOrCreate(['iata'=>$s->origin], ['name'=>$s->originName, 'country_code'=>$s->originCountry]);
-                $d = Airport::firstOrCreate(['iata'=>$s->destination], ['name'=>$s->destinationName, 'country_code'=>$s->destCountry]);
+                $o = Airport::firstOrCreate(['iata' => $s->origin], ['name' => $s->originName, 'country_code' => $s->originCountry]);
+                $d = Airport::firstOrCreate(['iata' => $s->destination], ['name' => $s->destinationName, 'country_code' => $s->destCountry]);
                 $route = AirportRoute::firstOrCreate(
-                    ['origin_airport_id'=>$o->id, 'destination_airport_id'=>$d->id],
-                    ['display_name'=> "{$o->iata} - {$d->iata}"]
+                    ['origin_airport_id' => $o->id, 'destination_airport_id' => $d->id],
+                    ['display_name' => "{$o->iata} - {$d->iata}"]
                 );
 
 //                    $carrierAirline = $s->carrier ? Airline::firstOrCreate(['code'=>$s->carrier], ['name'=>$s->carrier]) : null;
@@ -292,7 +332,7 @@ class UploadTicket extends Page
 //
 
                 $ticket->segments()->create([
-                    'segment_index' => $s->index ?? ($idx+1),
+                    'segment_index' => $s->index ?? ($idx + 1),
                     'origin_airport_id' => $o->id,
                     'destination_airport_id' => $d->id,
                     'route_id' => $route->id,
@@ -317,10 +357,10 @@ class UploadTicket extends Page
             }
             foreach ($dto->price->taxes as $t) {
                 $ticket->taxes()->create([
-                    'amount'=>$t['amount'],
-                    'code'=>$t['code'],
-                    'currency_id' =>$t['currency'] ?  optional(Currency::firstOrCreate(['symbol'=> $t['currency']] ,['name'=> $t['currency']])->first())->id : null,
-                ]) ;
+                    'amount' => $t['amount'],
+                    'code' => $t['code'],
+                    'currency_id' => $t['currency'] ? optional(Currency::firstOrCreate(['symbol' => $t['currency']], ['name' => $t['currency']])->first())->id : null,
+                ]);
             }
 
             if ($dto->validatingCarrier) {
@@ -338,19 +378,10 @@ class UploadTicket extends Page
             }
 
 
-
         });
 
 
-
-
-
-
-
-
     }
-
-
 
 
     public function getRecord()
