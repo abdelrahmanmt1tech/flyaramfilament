@@ -130,7 +130,7 @@ class Ticket extends Model
 
     public function createAccountTax()
     {
-       
+
         if ($this->tax_type_id && $this->tax_type_id !== 1) {
             AccountTax::updateOrCreate(
                 ['ticket_id' => $this->id, 'type' => 'sales_tax'],
@@ -142,18 +142,21 @@ class Ticket extends Model
                 ]
             );
         }
-    
-       
+
+
+
+
         if ($this->is_domestic_flight) {
             $percentage = TaxType::where('id', 1)->value('value') ?? 15;
-            $value = max($this->sale_total_amount, $this->cost_total_amount) 
+            $value = max($this->sale_total_amount, $this->cost_total_amount)
             * ($percentage / (100 + $percentage)); // todo: check this
-    
+
             AccountTax::updateOrCreate(
                 ['ticket_id' => $this->id, 'type' => 'purchase_tax'],
                 [
                     'tax_percentage' => $percentage,
                     'tax_value'      => $value,
+                    'tax_types_id'    => 1,
                     'is_returned'    => false,
                 ]
             );
@@ -180,6 +183,6 @@ class Ticket extends Model
     {
         return $this->belongsToMany(Invoice::class, 'invoice_ticket');
     }
-    
-    
+
+
 }

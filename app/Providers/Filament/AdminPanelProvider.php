@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\SetLocale;
+use CraftForge\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -10,6 +11,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\View\PanelsRenderHook;
@@ -30,6 +32,10 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->assets([
+                Css::make('custom-stylesheet', resource_path('css/filament-custom.css')),
+            ])
+            ->brandLogo(asset('images/logo.png'))
             ->profile()
             ->spa()
             ->registration()
@@ -61,34 +67,16 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->globalSearch(false)
-            ->renderHook(
-                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-                fn (): string => Blade::render(<<<'HTML'
-                    <div style="display: flex; align-items: center; gap: 4px; margin-left: 1rem; background: rgba(0,0,0,0.05); border-radius: 12px; padding: 4px;">
-                        <a href="{{ url('lang/ar') }}" 
-                           style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.2s;
-                                  {{ app()->getLocale() == 'ar' 
-                                     ? 'background: white; color: #f59e0b; box-shadow: 0 1px 3px rgba(0,0,0,0.1);' 
-                                     : 'color: #6b7280;' }}"
-                           onmouseover="if('{{ app()->getLocale() }}' != 'ar') this.style.color='#111827'"
-                           onmouseout="if('{{ app()->getLocale() }}' != 'ar') this.style.color='#6b7280'">
-                            <span style="font-size: 18px;">🇸🇦</span>
-                            <span>عربي</span>
-                        </a>
-                        
-                        <a href="{{ url('lang/en') }}" 
-                           style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; transition: all 0.2s;
-                                  {{ app()->getLocale() == 'en' 
-                                     ? 'background: white; color: #f59e0b; box-shadow: 0 1px 3px rgba(0,0,0,0.1);' 
-                                     : 'color: #6b7280;' }}"
-                           onmouseover="if('{{ app()->getLocale() }}' != 'en') this.style.color='#111827'"
-                           onmouseout="if('{{ app()->getLocale() }}' != 'en') this.style.color='#6b7280'">
-                            <span style="font-size: 18px;">🇬🇧</span>
-                            <span>English</span>
-                        </a>
-                    </div>
-                HTML)
-            );
+            ->plugins([
+                FilamentLanguageSwitcherPlugin::make()
+                    ->locales([
+                        ['code' => 'en', 'flag' => 'us'],
+                        ['code' => 'ar', 'flag' => 'eg'],
+                    ])
+
+                ,
+            ])
+
+            ;
     }
 }
