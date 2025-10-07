@@ -13,6 +13,18 @@ class Airport extends Model
         'iata',
         'name',
         'city',
+        'is_internal',
         'country_code',
     ];
+
+
+    protected function casts(): array
+    {
+        return [
+            'is_internal' => 'boolean',
+        ];
+    }
+
+
+
 }

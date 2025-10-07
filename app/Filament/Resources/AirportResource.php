@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Section as ComponentsSection;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,6 +64,10 @@ class AirportResource extends Resource
 
                 TextInput::make('city')
                     ->label(__('dashboard.fields.city')),
+
+                ToggleColumn::make('is_internal')
+                    ->default(false)
+                    ->label(__('dashboard.is_internal')),
 
                 TextInput::make('country_code')
                    ->maxLength(5)

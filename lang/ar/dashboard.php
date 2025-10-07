@@ -31,6 +31,7 @@ return [
         'tickets' => 'التذاكر',
         'upload_tickets' => 'رفع تذاكر',
         'account_statement' => 'كشف الحساب',
+        'ticket-matching' => 'مطابقه التذاكر',
     ],
 
     'upload_ticket' => [

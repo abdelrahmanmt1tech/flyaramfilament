@@ -20,7 +20,7 @@ class Airline extends Model
         'iata_code',     // كان code_string
         'iata_prefix',   // كان code
         'icao_code',
-        'is_internal',
+
     ];
 
     // Normalizers
@@ -32,10 +32,5 @@ class Airline extends Model
         $this->attributes['iata_prefix'] = str_pad($digits, 3, '0', STR_PAD_LEFT); // 3 خانات
     }
 
-    protected function casts(): array
-    {
-        return [
-            'is_internal' => 'boolean',
-        ];
-    }
+
 }

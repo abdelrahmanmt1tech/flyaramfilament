@@ -76,7 +76,7 @@ class FranchiseResource extends Resource
                             ->label(__('dashboard.fields.contact_infos'))
                             ->reorderable()
                             ->collapsible()
-                            ->grid(2)
+                            ->columns(2)
                             ->defaultItems(0)
                             ->addActionLabel(__('dashboard.fields.add_contact_info')),
                     ])

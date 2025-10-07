@@ -12,6 +12,7 @@ class Supplier extends Model
     protected $fillable = [
         'name',
         'tax_number',
+
     ];
 
     public function contactInfos()
@@ -25,7 +26,7 @@ class Supplier extends Model
         return $this->morph(\App\Models\ContactInfo::class, 'contactable');
     }
 
-    
+
     public function accountStatements()
     {
         return $this->morphMany(AccountStatement::class, 'statementable');

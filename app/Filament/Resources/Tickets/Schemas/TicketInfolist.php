@@ -21,7 +21,7 @@ class TicketInfolist
                 TextEntry::make('ticket_number_full')->label(__('dashboard.fields.ticket_number_full')),
                 TextEntry::make('ticket_number_prefix')->label(__('dashboard.fields.ticket_number_prefix')),
                 TextEntry::make('ticket_number_core')->label(__('dashboard.fields.ticket_number_core')),
-                TextEntry::make('pnr')->label(__('dashboard.fields.pnr')),
+                TextEntry::make('pnr')->label(__('dashboard.fields.pnr')) ->prefix("pnr"),
                 TextEntry::make('issue_date')->label(__('dashboard.fields.issue_date'))->date(),
                 TextEntry::make('booking_date')->label(__('dashboard.fields.booking_date'))->date(),
                 TextEntry::make('ticket_type')->label(__('dashboard.fields.ticket_type')),

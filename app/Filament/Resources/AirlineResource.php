@@ -38,6 +38,11 @@ class AirlineResource extends Resource
     protected static ?string $modelLabel = 'شركة';
 
 
+
+
+
+
+
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.airlines');
@@ -55,23 +60,23 @@ class AirlineResource extends Resource
                             ->label(__('dashboard.fields.name_ar'))
                             ->suffix("ar")
                             ->required(),
-    
+
                         TextInput::make('name.en')
                             ->label(__('dashboard.fields.name_en'))
                             ->suffix("en")
                             ->required(),
-    
+
                         TextInput::make('iata_code')
                             ->label(__('dashboard.fields.iata_code'))
                             ->placeholder('مثال: SV للسعودية')
                             ->maxLength(2),
-    
+
                         TextInput::make('iata_prefix')
                             ->label(__('dashboard.fields.iata_prefix'))
                             ->placeholder('مثال: 096')
                             ->maxLength(3)
                             ->numeric(),
-    
+
                         TextInput::make('icao_code')
                             ->label(__('dashboard.fields.icao_code'))
                             ->placeholder('مثال: SVA للسعودية')
@@ -79,7 +84,7 @@ class AirlineResource extends Resource
                     ]),
             ]);
     }
-    
+
     public static function table(Table $table): Table
     {
         return $table

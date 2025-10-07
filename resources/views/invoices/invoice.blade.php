@@ -154,14 +154,14 @@
             <tr>
                 <th>Airline Name</th>
                 <td>{{ $ticket->airline->name ?? $ticket->airline_name }} ({{ $ticket->airline->iata_code ?? '' }})</td>
-                
+
                 <th>Airline Code</th>
                 <td>{{ $ticket->airline->iata_prefix ?? $ticket->validating_carrier_code ?? '' }}</td>
             </tr>
             <tr>
                 <th>Ticket Number</th>
                 <td>{{ $ticket->ticket_number_full ?? '' }}</td>
-    
+
                 <th>Issue Date</th>
                 <td>{{ $ticket->issue_date ? $ticket->issue_date->format('Y-m-d') : '' }}</td>
             </tr>
@@ -180,7 +180,7 @@
             <tr>
                 <th>Beneficiary</th>
                 <td>{{ $ticket->client->name ?? 'N/A' }}</td>
-    
+
                 <th>PNR</th>
                 <td>{{ $ticket->pnr ?? '' }}</td>
             </tr>
@@ -294,7 +294,7 @@
             <th>Invoice Date</th>
             <td>{{ $invoice->created_at ? $invoice->created_at->format('Y-m-d') : '' }}</td>
             <th>Due Date</th>
-            <td>{{ $invoice->due_date ? $invoice->due_date->format('Y-m-d') : '' }}</td>
+            <td>{{ $invoice->due_date ? $invoice->due_date/*->format('Y-m-d')*/ : '' }}</td>
         </tr>
         <tr>
             <th>Total Taxes</th>
