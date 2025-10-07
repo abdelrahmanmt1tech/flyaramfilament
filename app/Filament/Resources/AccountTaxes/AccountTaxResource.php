@@ -36,6 +36,8 @@ class AccountTaxResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Ticket;
 
+    protected static ?int $navigationSort = 85;
+
     protected static ?string $navigationLabel = "سجل الضرائب";
     protected static ?string $pluralModelLabel = "سجل الضرائب";
     protected static ?string $modelLabel = 'سجل الضرائب';
@@ -91,22 +93,31 @@ class AccountTaxResource extends Resource
                 )
                 ,*/
                 TextEntry::make('tax_percentage')
-                    ->numeric(),
+                    ->numeric()
+                    ->label('نسبة الضريبة'),
                 TextEntry::make('tax_value')
-                    ->numeric(),
+                    ->numeric()
+                    ->label('قيمة الضريبة'),
 
-                TextEntry::make('taxType.name'),
+                TextEntry::make('taxType.name')
+                    ->label('نوع الضريبة'),
 
-                IconEntry::make('is_returned') ->boolean(),
+                IconEntry::make('is_returned') ->boolean()
+                    ->label('مرتجع'),
 
-                TextEntry::make('zakah_id'),
-                TextEntry::make('zakah_status'),
+                TextEntry::make('zakah_id')
+                    ->label('رقم الزكاة'),
+                TextEntry::make('zakah_status')
+                    ->label('حالة الزكاة'),
                 TextEntry::make('deleted_at')
-                    ->dateTime(),
+                    ->dateTime()
+                    ->label('تاريخ الحذف'),
                 TextEntry::make('created_at')
-                    ->dateTime(),
+                    ->dateTime()
+                    ->label('تاريخ الإنشاء'),
                 TextEntry::make('updated_at')
-                    ->dateTime(),
+                    ->dateTime()
+                    ->label('تاريخ التحديث'),
             ]);
     }
 
@@ -118,11 +129,14 @@ class AccountTaxResource extends Resource
             ->columns([
 
                 TextColumn::make('ticket.ticket_number_core')->copyable()
+                    ->label('رقم الفاتورة')
                     ->sortable()
                     ->searchable() ,
 
-                TextColumn::make('taxType.name'),
+                TextColumn::make('taxType.name')
+                    ->label('نوع الضريبة'),
                 TextColumn::make('type')
+                    ->label('النوع')
                     ->formatStateUsing(fn($state)=>match ($state)
                     {
                         'sales_tax'=>"ضريبه مبيعات" ,
@@ -136,10 +150,12 @@ class AccountTaxResource extends Resource
 
                 TextColumn::make('tax_percentage')
                     ->numeric()
+                    ->label('نسبة الضريبة')
                     ->sortable(),
 
                 TextColumn::make('tax_value')
                     ->numeric()
+                    ->label('قيمة الضريبة')
                     ->sortable()
                     ->summarize([
                         Sum::make()
@@ -148,9 +164,9 @@ class AccountTaxResource extends Resource
                     ]),
 
 
-                TextColumn::make('ticket.cost_total_amount')->label("cost") ,
-                TextColumn::make('ticket.profit_amount') ->label("profit"),
-                TextColumn::make('ticket.sale_total_amount')->label("sale") ,
+                TextColumn::make('ticket.cost_total_amount')->label('التكلفة') ,
+                TextColumn::make('ticket.profit_amount') ->label('الربح'),
+                TextColumn::make('ticket.sale_total_amount')->label('المبيعات') ,
 
 
 
@@ -167,14 +183,17 @@ class AccountTaxResource extends Resource
 
                 TextColumn::make('deleted_at')
                     ->dateTime()
+                    ->label('تاريخ الحذف')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
+                    ->label('تاريخ الإنشاء')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
+                    ->label('تاريخ التحديث')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

@@ -248,7 +248,7 @@ class TicketsTable
                         })
                         ->requiresConfirmation()
                         ->modalHeading('ترحيل التذاكر لفرع')
-                        ->modalButton('تنفيذ الترحيل')
+                        ->modalSubmitActionLabel('تنفيذ الترحيل')
                         ->color('warning')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
@@ -279,7 +279,7 @@ class TicketsTable
                         })
                         ->requiresConfirmation()
                         ->modalHeading('ترحيل التذاكر لفرانشايز')
-                        ->modalButton('تنفيذ الترحيل')
+                        ->modalSubmitActionLabel('تنفيذ الترحيل')
                         ->color('warning')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
@@ -310,7 +310,7 @@ class TicketsTable
                         })
                         ->requiresConfirmation()
                         ->modalHeading('ترحيل التذاكر لعميل')
-                        ->modalButton('تنفيذ الترحيل')
+                        ->modalSubmitActionLabel('تنفيذ الترحيل')
                         ->color('warning')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
@@ -341,7 +341,7 @@ class TicketsTable
                         })
                         ->requiresConfirmation()
                         ->modalHeading('ترحيل التذاكر لمورد')
-                        ->modalButton('تنفيذ الترحيل')
+                        ->modalSubmitActionLabel('تنفيذ الترحيل')
                         ->color('warning')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
@@ -425,7 +425,7 @@ class TicketsTable
                         })
                         ->requiresConfirmation()
                         ->modalHeading('تعديل الربح والخصم')
-                        ->modalButton('تنفيذ التعديل')
+                        ->modalSubmitActionLabel('تنفيذ التعديل')
                         ->color('info')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
@@ -575,6 +575,167 @@ class TicketsTable
                         ->modalHeading('إضافة فاتورة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
                         ->color('success')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
+
+
+
+                    // فواتير استرجاع 
+                    Action::make('bulkRefundInvoices')
+                        ->label('فاتورة استرجاع')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->schema([
+                            Repeater::make('tickets')
+                                ->label('التذاكر المحددة')
+                                ->schema([
+                                    Grid::make(2)
+                                        ->schema([
+                                            TextInput::make('ticket_number_core')
+                                                ->label('رقم التذكرة')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('airline_name')
+                                                ->label('الخطوط الجوية')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('invoice_number')
+                                                ->label('رقم الفاتورة الأصلية')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('sale_total_amount')
+                                                ->label('سعر البيع')
+                                                ->disabled()
+                                                ->dehydrated(),
+                                        ]),
+                                ])
+                                ->default(function ($livewire) {
+                                    $selectedRecords = $livewire->getSelectedTableRecords();
+
+                                    if (empty($selectedRecords)) {
+                                        return [];
+                                    }
+
+                                    return $selectedRecords->map(function ($ticket) {
+                                        $originalInvoice = $ticket->invoices()->first();
+
+                                        return [
+                                            'ticket_number_core' => $ticket->ticket_number_core,
+                                            'airline_name'       => $ticket->airline_name,
+                                            'invoice_number'     => $originalInvoice ? $originalInvoice->invoice_number : 'لا توجد فاتورة',
+                                            'sale_total_amount'  => number_format($ticket->sale_total_amount, 2),
+                                            'ticket_id'          => $ticket->id,
+                                            'has_invoice'        => !is_null($originalInvoice),
+                                            'has_refund_invoice' => $ticket->invoices()->where('type', 'refund')->exists(),
+                                        ];
+                                    })->toArray();
+                                })
+                                ->reorderable(false)
+                                ->addable(false)
+                                ->deletable(false)
+                                ->columnSpanFull(),
+
+                            Textarea::make('notes')
+                                ->label('ملاحظات الاسترجاع')
+                                ->columnSpanFull(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            // تصفية التذاكر التي لها فواتير ولا توجد لها فواتير استرجاع
+                            $ticketsWithInvoices = $records->filter(function ($ticket) {
+                                $hasOriginalInvoice = $ticket->invoices()->where('type', '!=', 'refund')->exists();
+                                $hasRefundInvoice = $ticket->invoices()->where('type', 'refund')->exists();
+
+                                return $hasOriginalInvoice && !$hasRefundInvoice;
+                            });
+
+                            if ($ticketsWithInvoices->isEmpty()) {
+                                Notification::make()
+                                    ->title('لا توجد تذاكر مؤهلة للاسترجاع')
+                                    ->body('جميع التذاكر المحددة إما ليس لها فواتير أصلية أو لها فواتير استرجاع مسبقة')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // تجميع التذاكر حسب الفاتورة الأصلية
+                            $invoicesGroup = [];
+                            foreach ($ticketsWithInvoices as $ticket) {
+                                $originalInvoice = $ticket->invoices()->where('type', '!=', 'refund')->first();
+
+                                if ($originalInvoice) {
+                                    $invoiceKey = $originalInvoice->invoiceable_type . '_' . $originalInvoice->invoiceable_id;
+
+                                    if (!isset($invoicesGroup[$invoiceKey])) {
+                                        $invoicesGroup[$invoiceKey] = [
+                                            'invoiceable_type' => $originalInvoice->invoiceable_type,
+                                            'invoiceable_id' => $originalInvoice->invoiceable_id,
+                                            'tickets' => [],
+                                            'total_amount' => 0,
+                                            'total_taxes' => 0,
+                                        ];
+                                    }
+
+                                    $invoicesGroup[$invoiceKey]['tickets'][] = $ticket;
+                                    $invoicesGroup[$invoiceKey]['total_amount'] += $ticket->sale_total_amount;
+                                    $invoicesGroup[$invoiceKey]['total_taxes'] += ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                                }
+                            }
+
+                            $createdRefundInvoices = [];
+
+                            // إنشاء فواتير الاسترجاع
+                            foreach ($invoicesGroup as $group) {
+                                // إنشاء رقم فاتورة الاسترجاع
+                                $lastInvoiceId = Invoice::max('id') ?? 0;
+                                $refundInvoiceNumber = 'REF-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
+
+                                // إنشاء فاتورة الاسترجاع
+                                $refundInvoice = Invoice::create([
+                                    'type' => 'refund',
+                                    'is_drafted' => false,
+                                    'total_taxes' => $group['total_taxes'],
+                                    'total_amount' => $group['total_amount'],
+                                    'invoice_number' => $refundInvoiceNumber,
+                                    'reference_num' => $originalInvoice ? $originalInvoice->invoice_number : null,
+                                    'notes' => $data['notes'] ?? null,
+                                    'invoiceable_type' => $group['invoiceable_type'],
+                                    'invoiceable_id' => $group['invoiceable_id'],
+                                ]);
+
+                                // ربط التذاكر بفاتورة الاسترجاع
+                                foreach ($group['tickets'] as $ticket) {
+                                    $refundInvoice->tickets()->attach($ticket->id);
+
+                                    // تحديث حالة التذكرة
+                                    $ticket->update(['is_refunded' => true]);
+                                }
+
+                                $createdRefundInvoices[] = $refundInvoiceNumber;
+                            }
+
+                            // إحصاءات
+                            $skippedTickets = $records->count() - $ticketsWithInvoices->count();
+
+                            $message = 'تم إنشاء ' . count($createdRefundInvoices) . ' فاتورة استرجاع: ' . implode(', ', $createdRefundInvoices);
+
+                            if ($skippedTickets > 0) {
+                                $message .= ' (تم تخطي ' . $skippedTickets . ' تذكرة)';
+                            }
+
+                            Notification::make()
+                                ->title('فواتير الاسترجاع')
+                                ->body($message)
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalWidth('4xl')
+                        ->modalHeading('إنشاء فاتورة استرجاع')
+                        ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
+                        ->color('danger')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()

@@ -29,6 +29,8 @@ class TicketPassengerResource extends Resource
     protected static ?string $model = TicketPassenger::class;
     protected static ?string $slug = 'ticket-passengers';
 
+    protected static ?int $navigationSort = 72;
+
     protected static ?string $navigationLabel = "مسافرو التذاكر";
     protected static ?string $pluralModelLabel = "مسافرو التذاكر";
     protected static ?string $modelLabel = 'مسافر تذكرة';

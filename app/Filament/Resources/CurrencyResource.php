@@ -30,6 +30,8 @@ class CurrencyResource extends Resource
 
     protected static ?string $slug = 'currencies';
 
+    protected static ?int $navigationSort = 100;
+
     protected static ?string $navigationLabel = "العملات";
     protected static ?string $pluralModelLabel = "العملات";
     protected static ?string $modelLabel = 'عملة';

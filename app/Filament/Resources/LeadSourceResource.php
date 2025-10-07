@@ -31,6 +31,8 @@ class LeadSourceResource extends Resource
 
     protected static ?string $slug = 'lead-sources';
 
+    protected static ?int $navigationSort = 110;
+
     protected static ?string $navigationLabel = "مصادر العملاء المحتملين";
     protected static ?string $pluralModelLabel = "مصادر العملاء المحتملين";
     protected static ?string $modelLabel = 'مصدر عميل محتمل';

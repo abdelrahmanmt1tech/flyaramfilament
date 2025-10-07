@@ -34,6 +34,8 @@ class SupplierResource extends Resource
 
     protected static ?string $slug = 'suppliers';
 
+    protected static ?int $navigationSort = 45;
+
     protected static ?string $navigationLabel = "الموردون";
     protected static ?string $pluralModelLabel = "الموردون";
     protected static ?string $modelLabel = 'مورد';

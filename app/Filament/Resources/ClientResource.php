@@ -36,6 +36,8 @@ class ClientResource extends Resource
 
     protected static ?string $slug = 'clients';
 
+    protected static ?int $navigationSort = 40;
+
     protected static ?string $navigationLabel = "العملاء";
     protected static ?string $pluralModelLabel = "العملاء";
     protected static ?string $modelLabel = 'عميل';

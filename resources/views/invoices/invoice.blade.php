@@ -47,6 +47,14 @@
             margin-top: 10px;
             border-left: 5px solid #333;
         }
+        .refund {
+            background-color: #f2f2f2;
+            padding: 7px;
+            font-size: 15px;
+            margin-top: 10px;
+            /* border-left: 5px solid #333; */
+            text-align: center;
+        }
 
         table {
             width: 100%;
@@ -123,7 +131,9 @@
         ];
         $company = \App\Models\Setting::whereIn('key', $companyKeys)->pluck('value', 'key');
     @endphp
-
+@if($invoice->type === 'refund')
+<h1 class="refund">REFUND INVOICE</h1>
+@endif
     <h3 class="section-title">Company Details</h3>
     <table>
         <tr>
@@ -141,6 +151,26 @@
         <tr>
             <th>Tourism License</th>
             <td colspan="3">{{ $company['tourism_license'] ?? '' }}</td>
+        </tr>
+    </table>
+    <h3 class="section-title">Client Details</h3>
+    <table>
+        @php
+        $ticket = $invoice->tickets->first();
+        $client = $ticket->client
+            ?? $ticket->supplier
+            ?? $ticket->branch
+            ?? $ticket->franchise;
+        @endphp
+        <tr>
+            <th>Client Name</th>
+            <td>{{ $client->company_name ?? $client->name ?? ''}}</td>
+            <th>Address</th>
+            <td>{{ $client->address ?? '' }}</td>
+        </tr>
+        <tr>
+            <th>Tax Number</th>
+            <td>{{ $client->tax_number ?? '' }}</td>
         </tr>
     </table>
 

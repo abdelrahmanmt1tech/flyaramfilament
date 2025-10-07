@@ -35,6 +35,8 @@ class BranchResource extends Resource
 
     protected static ?string $slug = 'branches';
 
+    protected static ?int $navigationSort = 20;
+
     protected static ?string $navigationLabel = "الفروع";
     protected static ?string $pluralModelLabel = "الفروع";
     protected static ?string $modelLabel = 'فرع';
@@ -108,11 +110,11 @@ class BranchResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                Action::make('statement')
-    ->label('كشف الحساب')
-    ->icon('heroicon-o-document-text')
-    ->url(fn ($record) => url("/admin/account-statement/branch/{$record->id}"))
-    ->openUrlInNewTab(),
+    //             Action::make('statement')
+    // ->label('كشف الحساب')
+    // ->icon('heroicon-o-document-text')
+    // ->url(fn ($record) => url("/admin/account-statement/branch/{$record->id}"))
+    // ->openUrlInNewTab(),
                 EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),
