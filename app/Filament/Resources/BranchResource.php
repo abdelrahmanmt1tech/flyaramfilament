@@ -42,7 +42,7 @@ class BranchResource extends Resource
     protected static ?string $modelLabel = 'فرع';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingStorefront;
-    
+
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.branches');
@@ -80,7 +80,7 @@ class BranchResource extends Resource
                             ->label(__('dashboard.fields.contact_infos'))
                             ->reorderable()
                             ->collapsible()
-                            ->grid(2)
+->columns(2)
                             ->defaultItems(0)
                             ->addActionLabel(__('dashboard.fields.add_contact_info')),
                     ])

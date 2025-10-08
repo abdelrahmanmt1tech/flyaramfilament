@@ -31,7 +31,7 @@ return [
         'tickets' => 'التذاكر',
         'upload_tickets' => 'رفع تذاكر',
         'account_statement' => 'كشف الحساب',
-        'free_invoices' => 'الفواتير الحرة',
+        'ticket-matching' => 'مطابقه التذاكر',
     ],
 
     'upload_ticket' => [

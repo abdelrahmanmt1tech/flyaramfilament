@@ -13,8 +13,8 @@ use App\Models\Supplier;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\Tickets\TicketParser;
-use DB;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -22,30 +22,28 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use File;
 use Illuminate\Support\Facades\Storage;
-use ZipArchive;
+use Spatie\PdfToText\Pdf;
+use UnitEnum;
 
-class UploadTicket extends Page
+class TicketMatching extends Page
 {
-    protected string $view = 'filament.pages.upload-ticket';
+    protected string $view = 'filament.pages.ticket-matching';
 
 
+
+
+    protected static string | UnitEnum | null $navigationGroup = "رفع وتضمين";
     public $defaultAction = 'onboarding';
-
-
-    protected static string | \UnitEnum | null $navigationGroup = "رفع وتضمين";
-
-
 
     public function getTitle(): string
     {
-        return __('dashboard.sidebar.upload_tickets');
+        return __('dashboard.sidebar.ticket-matching');
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('dashboard.sidebar.upload_tickets');
+        return __('dashboard.sidebar.ticket-matching');
     }
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::CloudArrowUp;
@@ -77,18 +75,19 @@ class UploadTicket extends Page
             ->components([
                 Form::make([
 
-                    FileUpload::make('text_file')
-                        ->label(__('dashboard.upload_ticket.form.file_label'))
+                    DatePicker::make('start_date') ->label('من تاريخ') ->required(),
+                    DatePicker::make('end_date') ->label('الى تاريخ') ->required(),
+                    FileUpload::make('pdf_file')
+                        ->label("يجب رفع ملف PDF")
                         ->required()
                         ->previewable(false)
-                        ->moveFiles()
-                        ->directory('tickets') // مسار الحفظ داخل disk
-                        ->disk('public') // أو local إن أردت
+                        ->previewable(false)
+                        ->directory('pdf_files')
+                        ->disk('public')
 
                 ])
                     ->livewireSubmitHandler('save')
                     ->footer([
-
                         Actions::make([
                             Action::make('save')
                                 ->label(__('dashboard.save'))
@@ -101,18 +100,78 @@ class UploadTicket extends Page
             ->statePath('data');
     }
 
+
+
+
+
     public function save(): void
     {
         $data = $this->form->getState();
-        if (empty($data['text_file'])) {
 
+
+        if (
+            empty($data['pdf_file']) ||
+            empty($data['start_date']) ||
+            empty($data['end_date'])
+
+        ) {
             Notification::make()
                 ->danger()
-                ->title(__('dashboard.upload_ticket.messages.select_file'))
+                ->title("بيانات غير مكتمله")
                 ->send();
-
             return;
         }
+
+
+
+
+        Notification::make()
+                ->danger()
+                ->title("يتطلب اعدادات ال PDF على الخادم")
+                ->send();
+
+
+            return;
+
+        $disk = Storage::disk('public');
+        $relativePath = $data['pdf_file'];
+        $absPath = $disk->path($relativePath);
+        $text = Pdf::getText($disk->get($relativePath));
+        dd($text);
+        $lines = explode("\n", $text);
+        $tickets = [];
+        foreach ($lines as $line) {
+            /*  if (preg_match('/\d{10}/', $line)) {
+                  $tickets[] = $line;
+              }*/
+            if (preg_match_all('/\b\d{10}\b/', $line, $matches)) {
+                foreach ($matches[0] as $ticket) {
+                    $tickets[] = $ticket;
+                }
+            }
+
+        }
+
+//        return response()->json([
+//            'raw_text' => substr($text, 0, 1000), // أول 1000 حرف بس للمعاينة
+//            'tickets' => $tickets,
+//        ]);
+//
+//
+
+//        $excelTickets = $reader->readTickets($filePath);
+        $result = $matcher->match($tickets, $request->start_date, $request->end_date);
+        $active = "" ;
+        $title = "" ;
+
+
+
+
+
+        config()->set("app.debug" , true);
+        $filePath = $request->file('file')->getRealPath();
+
+
 
         if (isset($data['text_file'])) {
             // 2) مسار الملف على القرص
@@ -253,27 +312,27 @@ class UploadTicket extends Page
 
 */
 
-/*
- *
- * TRUNCATE `invoice_ticket`;
-TRUNCATE `tickets`;
-TRUNCATE `ticket_passengers`;
-TRUNCATE `ticket_segments`;
-TRUNCATE `ticket_taxes`;
+        /*
+         *
+         * TRUNCATE `invoice_ticket`;
+        TRUNCATE `tickets`;
+        TRUNCATE `ticket_passengers`;
+        TRUNCATE `ticket_segments`;
+        TRUNCATE `ticket_taxes`;
 
 
 
 
-        */
+                */
 
         DB::transaction(function () use ($dto) {
 
 
 
             if ($dto->supplier)
-            $supplier =Supplier::firstOrCreate(
-                [ 'name' => $dto->supplier ],
-                ['name' => $dto->supplier , 'tax_number' => null ,] );
+                $supplier =Supplier::firstOrCreate(
+                    [ 'name' => $dto->supplier ],
+                    ['name' => $dto->supplier , 'tax_number' => null ,] );
 
 
             $sales_user_id =  null ;
@@ -464,3 +523,8 @@ TRUNCATE `ticket_taxes`;
 
 
 }
+
+
+
+
+

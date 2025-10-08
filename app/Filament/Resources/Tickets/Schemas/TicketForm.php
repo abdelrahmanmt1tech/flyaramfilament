@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Tickets\Schemas;
 
+use App\Filament\SharedForms\ContactInfoForm;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Select;
@@ -22,52 +24,67 @@ class TicketForm
                 TextInput::make('ticket_number_full')->label(__('dashboard.fields.ticket_number_full')),
                 TextInput::make('ticket_number_prefix')->label(__('dashboard.fields.ticket_number_prefix')),
                 TextInput::make('ticket_number_core')->label(__('dashboard.fields.ticket_number_core')),
-                TextInput::make('pnr')->label(__('dashboard.fields.pnr')),
+                TextInput::make('pnr')->label(__('dashboard.fields.pnr'))->prefix("pnr"),
                 DatePicker::make('issue_date')->label(__('dashboard.fields.issue_date')),
                 DatePicker::make('booking_date')->label(__('dashboard.fields.booking_date')),
-                TextInput::make('ticket_type')->label(__('dashboard.fields.ticket_type')),
+
+
+                TextInput::make('ticket_type')
+                    ->label(__('dashboard.fields.ticket_type')),
                 TextInput::make('ticket_type_code')->label(__('dashboard.fields.ticket_type_code')),
+
+
                 TextInput::make('trip_type')->label(__('dashboard.fields.trip_type')),
                 Toggle::make('is_domestic_flight')->label(__('dashboard.fields.is_domestic_flight')),
                 TextInput::make('itinerary_string')->label(__('dashboard.fields.itinerary_string')),
                 TextInput::make('fare_basis_out')->label(__('dashboard.fields.fare_basis_out')),
                 TextInput::make('fare_basis_in')->label(__('dashboard.fields.fare_basis_in')),
+
+
                 TextInput::make('branch_code')->label(__('dashboard.fields.branch_code')),
+
+
                 TextInput::make('office_id')->label(__('dashboard.fields.office_id')),
+
+
+                TextInput::make('pnr_branch_code'),
+                TextInput::make('pnr_office_id'),
+                TextInput::make('issuing_office_id'),
+                TextInput::make('issuing_carrier'),
+
+
                 TextInput::make('created_by_user')->label(__('dashboard.fields.created_by_user')),
                 TextInput::make('carrier_pnr_carrier')->label(__('dashboard.fields.carrier_pnr_carrier'))->maxLength(10),
                 TextInput::make('carrier_pnr')->label(__('dashboard.fields.carrier_pnr')),
-            ]),
 
+
+            ]),
             Section::make(__('dashboard.fields.costs_and_relations'))->schema([
                 TextInput::make('cost_base_amount')
                     ->numeric()
                     ->lazy()
-                    ->afterStateUpdated(fn ($state, callable $set, callable $get) => 
-                    $set('cost_total_amount', ($state ?? 0) + ($get('cost_tax_amount') ?? 0))
-                    + $set('sale_total_amount',
-                        (($state ?? 0) + ($get('cost_tax_amount') ?? 0)) + // cost_total_amount الجديد
-                        ($get('profit_amount') ?? 0) +
-                        ($get('extra_tax_amount') ?? 0) -
-                        ($get('discount_amount') ?? 0)
+                    ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('cost_total_amount', ($state ?? 0) + ($get('cost_tax_amount') ?? 0))
+                        + $set('sale_total_amount',
+                            (($state ?? 0) + ($get('cost_tax_amount') ?? 0)) + // cost_total_amount الجديد
+                            ($get('profit_amount') ?? 0) +
+                            ($get('extra_tax_amount') ?? 0) -
+                            ($get('discount_amount') ?? 0)
+                        )
                     )
-                )
-            
                     ->label(__('dashboard.fields.cost_base_amount')),
 
                 TextInput::make('cost_tax_amount')
                     ->numeric()
                     ->lazy()
-                    ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                    $set('cost_total_amount', ($get('cost_base_amount') ?? 0) + ($state ?? 0))
-                    + $set('sale_total_amount',
-                        (($get('cost_base_amount') ?? 0) + ($state ?? 0)) + // cost_total_amount الجديد
-                        ($get('profit_amount') ?? 0) +
-                        ($get('extra_tax_amount') ?? 0) -
-                        ($get('discount_amount') ?? 0)
+                    ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('cost_total_amount', ($get('cost_base_amount') ?? 0) + ($state ?? 0))
+                        + $set('sale_total_amount',
+                            (($get('cost_base_amount') ?? 0) + ($state ?? 0)) + // cost_total_amount الجديد
+                            ($get('profit_amount') ?? 0) +
+                            ($get('extra_tax_amount') ?? 0) -
+                            ($get('discount_amount') ?? 0)
+                        )
                     )
-                )
-                                ->label(__('dashboard.fields.cost_tax_amount')),
+                    ->label(__('dashboard.fields.cost_tax_amount')),
 
                 TextInput::make('cost_total_amount')
                     ->numeric()
@@ -78,39 +95,36 @@ class TicketForm
                 TextInput::make('profit_amount')
                     ->numeric()
                     ->lazy()
-                    ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                        $set('sale_total_amount',
-                            ($get('cost_total_amount') ?? 0) +
-                            ($state ?? 0) +
-                            ($get('extra_tax_amount') ?? 0) -
-                            ($get('discount_amount') ?? 0)
-                        )
+                    ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('sale_total_amount',
+                        ($get('cost_total_amount') ?? 0) +
+                        ($state ?? 0) +
+                        ($get('extra_tax_amount') ?? 0) -
+                        ($get('discount_amount') ?? 0)
+                    )
                     )
                     ->label(__('dashboard.fields.profit_amount')),
 
                 TextInput::make('discount_amount')
                     ->numeric()
                     ->lazy()
-                    ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                        $set('sale_total_amount',
-                            ($get('cost_total_amount') ?? 0) +
-                            ($get('profit_amount') ?? 0) +
-                            ($get('extra_tax_amount') ?? 0) -
-                            ($state ?? 0)
-                        )
+                    ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('sale_total_amount',
+                        ($get('cost_total_amount') ?? 0) +
+                        ($get('profit_amount') ?? 0) +
+                        ($get('extra_tax_amount') ?? 0) -
+                        ($state ?? 0)
+                    )
                     )
                     ->label(__('dashboard.fields.discount_amount')),
 
                 TextInput::make('extra_tax_amount')
                     ->numeric()
                     ->lazy()
-                    ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                        $set('sale_total_amount',
-                            ($get('cost_total_amount') ?? 0) +
-                            ($get('profit_amount') ?? 0) +
-                            ($state ?? 0) -
-                            ($get('discount_amount') ?? 0)
-                        )
+                    ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('sale_total_amount',
+                        ($get('cost_total_amount') ?? 0) +
+                        ($get('profit_amount') ?? 0) +
+                        ($state ?? 0) -
+                        ($get('discount_amount') ?? 0)
+                    )
                     )
                     ->label(__('dashboard.fields.extra_tax_amount')),
 
@@ -138,27 +152,74 @@ class TicketForm
                         ->relationship('supplier', 'name')
                         ->searchable(),
 
+
+                    Select::make('sales_user_id')
+                        ->label(__('dashboard.fields.sales_user_name'))
+                        ->relationship('salesAgent', 'name')
+                        ->searchable(),
+
+
                     Select::make('client_id')
                         ->label(__('dashboard.fields.client_name'))
                         ->relationship('client', 'name')
                         ->searchable(),
+
 
                     Select::make('branch_id')
                         ->label(__('dashboard.fields.branch_name'))
                         ->relationship('branch', 'name')
                         ->searchable(),
 
+
                     Select::make('franchise_id')
                         ->label(__('dashboard.fields.franchise_name'))
                         ->relationship('franchise', 'name')
                         ->searchable(),
 
-                    Select::make('sales_user_id')
-                        ->label(__('dashboard.fields.sales_user_name'))
-                        ->relationship('salesAgent', 'name')
-                        ->searchable(),
                 ]),
             ]),
+
+
+            Section::make(__('dashboard.taxes'))
+                ->schema([
+                    Repeater::make('taxes')
+                        ->relationship('taxes')
+                        ->schema(
+                            [
+
+                                TextInput::make('amount')
+                                    ->numeric()
+                                    ->label(__('dashboard.fields.amount')),
+
+
+                                TextInput::make('code')
+                                    ->numeric()
+                                    ->label(__('dashboard.fields.code')),
+
+
+                                Select::make('currency_id')
+                                    ->label(__('dashboard.fields.currency_code'))
+                                    ->relationship('currency', 'symbol')
+                                    ->searchable(),
+
+
+                            ]
+                        )
+                        ->label(__('dashboard.taxes'))
+                        ->reorderable()
+                        ->collapsible()
+                        ->collapsed()
+                        ->columns(2)
+                        ->defaultItems(0)
+                    ,
+
+                ])
+                ->collapsible(),
+
+
+
+
+
         ]);
     }
 }

@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->string('name');
             $table->string('code')->nullable();
             $table->string('code_string')->nullable();
-//            $table->boolean('is_internal')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });
