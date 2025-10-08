@@ -56,6 +56,11 @@ class UploadTicket extends Page
     public ?array $data = [];
     public $text_file;
 
+    
+    public static function getNavigationSort(): ?int
+    {
+        return 69;
+    }
 
     public function mount(): void
     {
@@ -179,7 +184,7 @@ class UploadTicket extends Page
 
                 $TICKETS_USERS = array_unique($TICKETS_USERS);
                 if ($TICKETS_USERS) {
-                    $OLD_USERS = User::whereIn('id', $TICKETS_USERS)->pluck("iata_code")->toArray();
+                    $OLD_USERS = User::whereIn('iata_code', $TICKETS_USERS)->pluck("iata_code")->toArray();
                     foreach ($TICKETS_USERS as $user) {
                         if (!in_array($user, $OLD_USERS)) {
                             $NEW_USERS[] = $user;

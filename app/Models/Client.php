@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
@@ -62,5 +63,11 @@ class Client extends Model
     public function payments()
     {
         return $this->morphMany(Payment::class, 'paymentable');
+    }
+
+
+    public function reservations(): MorphMany
+    {
+        return $this->morphMany(Reservation::class, 'related');
     }
 }

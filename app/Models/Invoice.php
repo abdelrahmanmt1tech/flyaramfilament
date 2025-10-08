@@ -22,6 +22,9 @@ class Invoice extends Model
 
     protected $casts = [
         'is_drafted' => 'boolean',
+        'due_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function invoiceable()

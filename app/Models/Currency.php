@@ -19,4 +19,10 @@ class Currency extends Model
         'name',
         'symbol',
     ];
+
+    // علاقة مع عناصر الحجوزات
+    public function reservationItems()
+    {
+        return $this->hasMany(ReservationItem::class);
+    }
 }

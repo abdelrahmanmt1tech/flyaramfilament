@@ -6,6 +6,7 @@ use App\Filament\Resources\BranchResource\Pages;
 use App\Filament\SharedForms\ContactInfoForm;
 use App\Models\Branch;
 use BackedEnum;
+use Faker\Core\Color;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -42,7 +43,7 @@ class BranchResource extends Resource
     protected static ?string $modelLabel = 'فرع';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingStorefront;
-    
+
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.branches');
@@ -102,7 +103,7 @@ class BranchResource extends Resource
 
                 TextColumn::make('contactInfos.phone')
                     ->label(__('dashboard.fields.phone'))
-                    ->getStateUsing(fn ($record) => $record->contactInfos()->first()?->phone ?? '-')
+                    ->getStateUsing(fn($record) => $record->contactInfos()->first()?->phone ?? '-')
                     ->sortable(false)
                     ->searchable(false),
             ])
@@ -110,11 +111,23 @@ class BranchResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-    //             Action::make('statement')
-    // ->label('كشف الحساب')
-    // ->icon('heroicon-o-document-text')
-    // ->url(fn ($record) => url("/admin/account-statement/branch/{$record->id}"))
-    // ->openUrlInNewTab(),
+                Action::make('statement')
+                    ->label('كشف الحساب')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->url(fn($record) => url("/admin/account-statement-page") . '?' . http_build_query([
+                        'tableFilters' => [
+                            'date_filter' => [
+                                'date_range' => 'current_month',
+                            ],
+                            'account_filter' => [
+                                'statementable_type' => get_class($record), // عشان يجيب الكلاس الحقيقي للموديل
+                                'statementable_id'   => $record->id,
+                            ],
+                        ],
+                    ]))
+
+                    ->openUrlInNewTab(),
                 EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),

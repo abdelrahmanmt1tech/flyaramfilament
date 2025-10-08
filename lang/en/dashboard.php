@@ -32,6 +32,8 @@ return [
         'upload_tickets' => 'Upload Tickets',
         'account_statement' => 'Account Statement',
         'free_invoices' => 'Free Invoices',
+        'reservations' => 'Reservations',
+
     ],
 
     'upload_ticket' => [

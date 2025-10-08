@@ -212,9 +212,21 @@ class TicketsTable
                 Action::make('viewInvoice')
                     ->label('عرض الفاتورة')
                     ->icon('heroicon-o-document-text')
+                    ->color('success')
                     ->visible(fn($record) => $record->invoices()->exists())
                     ->url(fn($record) => route('invoices.print', $record->invoices()->first()->id))
                     ->openUrlInNewTab(),
+
+                
+                // عرض فاتورة الاسترجاع
+                Action::make('showRefundInvoice')
+                    ->label('عرض فاتورة الاسترجاع')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->visible(fn($record) => $record->invoices()->where('type', 'refund')->exists())
+                    ->url(fn($record) => route('invoices.print', $record->invoices()->where('type', 'refund')->first()->id))
+                    ->openUrlInNewTab(),
+
                 ViewAction::make(),
                 EditAction::make(),
             ])
@@ -710,7 +722,7 @@ class TicketsTable
                                     $refundInvoice->tickets()->attach($ticket->id);
 
                                     // تحديث حالة التذكرة
-                                    $ticket->update(['is_refunded' => true]);
+                                    $ticket->update(['is_refunded' => 1 , 'ticket_type' =>'ملغاة / مسترجعة']); //النوع حدثته زي ما هو في الداتا بيز 
                                 }
 
                                 $createdRefundInvoices[] = $refundInvoiceNumber;

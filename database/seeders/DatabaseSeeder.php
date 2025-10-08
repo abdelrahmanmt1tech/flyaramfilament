@@ -19,6 +19,16 @@ class DatabaseSeeder extends Seeder
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
-        $this->call(TaxTypeSeeder::class);
+        $this->call([
+            LeadSourceSeeder::class,
+            CurrencySeeder::class,
+            UserSeeder::class,
+            SupplierSeeder::class,
+            BranchSeeder::class,
+            FranchiseSeeder::class,
+            ClientSeeder::class,
+            TaxTypeSeeder::class,
+            SafesBankSeeder::class,
+        ]);
     }
 }

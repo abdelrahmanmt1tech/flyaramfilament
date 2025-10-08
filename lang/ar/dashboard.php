@@ -32,6 +32,7 @@ return [
         'upload_tickets' => 'رفع تذاكر',
         'account_statement' => 'كشف الحساب',
         'free_invoices' => 'الفواتير الحرة',
+        'reservations' => 'الحجوزات',
     ],
 
     'upload_ticket' => [
