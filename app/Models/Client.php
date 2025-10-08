@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Translatable\HasTranslations;
 
@@ -53,5 +54,13 @@ class Client extends Model
         return $this->morphMany(AccountStatement::class, 'statementable');
     }
 
-    
+    public function freeInvoice(): MorphOne
+    {
+        return $this->morphOne(FreeInvoice::class, 'free_invoiceable');
+    }
+
+    public function payments()
+    {
+        return $this->morphMany(Payment::class, 'paymentable');
+    }
 }

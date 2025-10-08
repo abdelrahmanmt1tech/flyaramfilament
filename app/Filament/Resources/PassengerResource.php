@@ -31,6 +31,8 @@ class PassengerResource extends Resource
 
     protected static ?string $slug = 'passengers';
 
+    protected static ?int $navigationSort = 65;
+
     protected static ?string $navigationLabel = "المسافرون";
     protected static ?string $pluralModelLabel = "المسافرون";
     protected static ?string $modelLabel = 'مسافر';

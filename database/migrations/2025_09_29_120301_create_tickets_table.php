@@ -81,6 +81,7 @@ return new class extends Migration {
 
             // ////
             $t->boolean('is_invoiced')->default(false);
+            $t->boolean('is_refunded')->default(false);
         });
     }
 

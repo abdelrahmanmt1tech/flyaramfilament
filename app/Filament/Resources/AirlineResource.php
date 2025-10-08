@@ -32,6 +32,8 @@ class AirlineResource extends Resource
 
     protected static ?string $slug = 'airlines';
 
+    protected static ?int $navigationSort = 60;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingOffice;
     protected static ?string $navigationLabel = "الشركات";
     protected static ?string $pluralModelLabel = "الشركات";

@@ -85,7 +85,7 @@ class AccountStatement extends Model
 
     public function passengers()
     {
-        return $this->hasManyThrough(Passenger::class, TicketPassenger::class , 'ticket_id', 'id', 'ticket_id', 'passenger_id');
+        return $this->hasManyThrough(Passenger::class, TicketPassenger::class, 'ticket_id', 'id', 'ticket_id', 'passenger_id');
     }
 
     // public function invoices()
@@ -101,14 +101,38 @@ class AccountStatement extends Model
     // }
 
     public function invoices()
-{
-    return $this->belongsToMany(
-        Invoice::class,
-        'invoice_ticket',
-        'ticket_id',  // المفتاح في جدول pivot
-        'invoice_id', // المفتاح في جدول pivot
-        'ticket_id',  // المفتاح في account_statements
-        'id'          // المفتاح في tickets
-    );
-}
+    {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_ticket',
+            'ticket_id',  // المفتاح في جدول pivot
+            'invoice_id', // المفتاح في جدول pivot
+            'ticket_id',  // المفتاح في account_statements
+            'id'          // المفتاح في tickets
+        );
+    }
+
+
+    public function refundInvoices()
+    {
+        return $this->invoices()->where('type', 'refund');
+    }
+
+
+    public function originalInvoices()
+    {
+        return $this->invoices()->where('type', '!=', 'refund');
+    }
+
+
+    public function hasRefundInvoice()
+    {
+        return $this->refundInvoices()->exists();
+    }
+
+
+    public function hasOriginalInvoice()
+    {
+        return $this->originalInvoices()->exists();
+    }
 }

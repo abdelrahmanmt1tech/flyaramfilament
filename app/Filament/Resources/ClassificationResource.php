@@ -31,6 +31,8 @@ class ClassificationResource extends Resource
 
     protected static ?string $slug = 'classifications';
 
+    protected static ?int $navigationSort = 90;
+
     protected static ?string $navigationLabel = "التصنيفات";
     protected static ?string $pluralModelLabel = "التصنيفات";
     protected static ?string $modelLabel = 'تصنيف';

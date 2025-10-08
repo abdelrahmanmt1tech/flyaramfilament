@@ -32,6 +32,8 @@ class AirportResource extends Resource
 
     protected static ?string $slug = 'airports';
 
+    protected static ?int $navigationSort = 50;
+
     protected static ?string $navigationLabel = "المطارات";
     protected static ?string $pluralModelLabel = "المطارات";
     protected static ?string $modelLabel = 'مطار';

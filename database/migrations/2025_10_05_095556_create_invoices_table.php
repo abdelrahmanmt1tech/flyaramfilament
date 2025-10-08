@@ -16,7 +16,7 @@ return new class extends Migration
             $table->morphs('invoiceable'); // invoiceable_id + invoiceable_type
 
             // Invoice details
-            $table->enum('type', ['sale', 'purchase', 'restore']);
+            $table->enum('type', ['sale', 'purchase', 'refund']);
             $table->boolean('is_drafted')->default(true);
         
             // Totals
@@ -25,6 +25,7 @@ return new class extends Migration
         
             // رقم الفاتورة
             $table->string('invoice_number')->unique();
+            $table->string('reference_num')->nullable();
 
             $table->text('notes')->nullable();
 

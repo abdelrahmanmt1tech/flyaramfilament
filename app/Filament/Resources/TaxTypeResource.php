@@ -30,6 +30,8 @@ class TaxTypeResource extends Resource
 
     protected static ?string $slug = 'tax-types';
 
+    protected static ?int $navigationSort = 95;
+
     protected static ?string $navigationLabel = "أنواع الضرائب";
     protected static ?string $pluralModelLabel = "أنواع الضرائب";
     protected static ?string $modelLabel = 'نوع ضريبة';

@@ -34,6 +34,8 @@ class FranchiseResource extends Resource
 
     protected static ?string $slug = 'franchises';
 
+    protected static ?int $navigationSort = 30;
+
     protected static ?string $navigationLabel = "الامتيازات";
     protected static ?string $pluralModelLabel = "الامتيازات";
     protected static ?string $modelLabel = 'امتياز';

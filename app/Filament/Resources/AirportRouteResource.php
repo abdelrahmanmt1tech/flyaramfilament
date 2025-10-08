@@ -30,6 +30,8 @@ class AirportRouteResource extends Resource
 
     protected static ?string $slug = 'airport-routes';
 
+    protected static ?int $navigationSort = 55;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArrowsRightLeft;
 
     public static function getNavigationLabel(): string

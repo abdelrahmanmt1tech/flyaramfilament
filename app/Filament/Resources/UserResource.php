@@ -36,6 +36,8 @@ class UserResource extends Resource
 
     protected static ?string $slug = 'admins';
 
+    protected static ?int $navigationSort = 10;
+
     protected static ?string $navigationLabel = 'المسؤولون';
     protected static ?string $pluralModelLabel = 'المسؤولون';
     protected static ?string $modelLabel = 'مسؤول';
@@ -56,19 +58,19 @@ class UserResource extends Resource
                         TextInput::make('name')
                             ->label('الاسم')
                             ->required(),
-                    
+
                         TextInput::make('email')
                             ->label('البريد الإلكتروني')
                             ->email()
                             ->required(),
-                    
+
                         TextInput::make('password')
                             ->label('كلمة المرور')
                             ->password()
                             ->confirmed() // validation confirmed
                             ->dehydrateStateUsing(fn($state) => !empty($state) ? bcrypt($state) : null)
                             ->dehydrated(fn($state) => filled($state)),
-                    
+
                         TextInput::make('password_confirmation')
                             ->label('تأكيد كلمة المرور')
                             ->password()
@@ -76,7 +78,7 @@ class UserResource extends Resource
                     ]),
                 ]),
 
-                Section::make('الربط')
+            Section::make('الربط')
                 ->schema([
                     Grid::make(2)->schema([
                         Select::make('branches')
@@ -86,7 +88,7 @@ class UserResource extends Resource
                             ->searchable()
                             ->preload()
                             ->native(false),
-            
+
                         Select::make('franchises')
                             ->label('الفرانشايز')
                             ->relationship('franchises', 'name') // auto selected in edit
@@ -96,7 +98,7 @@ class UserResource extends Resource
                             ->native(false),
                     ]),
                 ]),
-            
+
         ]);
     }
 
@@ -128,9 +130,10 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' =>ListUsers::route('/'),
-            'create' =>CreateUser::route('/create'),
-            'edit' =>EditUser::route('/{record}/edit'),
+            'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
+            'edit' => EditUser::route('/{record}/edit'),
+            // 'new-users' => Pages\NewUsers::route('/new-users'),
         ];
     }
 
