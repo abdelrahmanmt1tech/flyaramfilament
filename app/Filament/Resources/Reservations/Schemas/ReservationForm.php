@@ -103,7 +103,6 @@ class ReservationForm
                 ->columns(2),
 
             // عناصر الحجز (Repeater مرتبط بجدول reservation_items)
-            Section::make('عناصر الحجز')->schema([
                 Repeater::make('items')
                     ->label('إضافة عنصر')
                     ->relationship('items')
@@ -219,8 +218,7 @@ class ReservationForm
                             TextInput::make('notes')->label('ملاحظات'),
                             TextInput::make('added_value')->label('القيمة المضافة'),
                         ])->columns(2),
-                    ]),
-            ])->columnSpanFull(),
+                    ])->columnSpanFull(),
         ]);
     }
 
