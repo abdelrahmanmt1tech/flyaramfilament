@@ -21,6 +21,9 @@ class Ticket extends Model
         'pnr',
         'issue_date',
         'booking_date',
+
+
+
         'ticket_type',
         'ticket_type_code',
         'trip_type',
@@ -28,28 +31,55 @@ class Ticket extends Model
         'itinerary_string',
         'fare_basis_out',
         'fare_basis_in',
+
+
         'branch_code',
+
+
         'office_id',
+
+
+
+        'pnr_branch_code',
+        'pnr_office_id',
+        'issuing_office_id',
+        'issuing_carrier',
         'created_by_user',
+
+        'carrier_pnr_carrier',
+        'carrier_pnr',
+
+        'cost_base_amount',
+        'cost_tax_amount',
+        'cost_total_amount',
+
+
+        'profit_amount',
+        'discount_amount',
+        'extra_tax_amount',
+        'sale_total_amount',
+
+
         'airline_id',
         'currency_id',
         'supplier_id',
         'sales_user_id',
         'client_id',
         'branch_id',
-        'cost_base_amount',
-        'cost_tax_amount',
-        'cost_total_amount',
-        'profit_amount',
-        'discount_amount',
-        'extra_tax_amount',
-        'sale_total_amount',
-        'carrier_pnr_carrier',
-        'carrier_pnr',
-        'price_taxes_breakdown',
         'franchise_id',
+
+
+        'price_taxes_breakdown',
+
+
+
+        // NEW
+
         'tax_type_id',
         'is_invoiced',
+        "sales_rep" ,
+
+
     ];
 
     protected $casts = [
@@ -183,6 +213,7 @@ class Ticket extends Model
     {
         return $this->belongsToMany(Invoice::class, 'invoice_ticket');
     }
+
 
 
 }

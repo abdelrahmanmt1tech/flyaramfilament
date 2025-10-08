@@ -145,7 +145,7 @@ class TicketsTable
 
                 // ======== باقي الحقول (togglable) ========
 
-                TextColumn::make('pnr')
+                TextColumn::make('pnr') ->prefix("pnr")
                     ->label(__('dashboard.fields.pnr'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable()
@@ -328,17 +328,22 @@ class TicketsTable
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
 
+
+
                     //  ترحيل للمورد
                     Action::make('bulkMigrateSupplier')
                         ->label('ترحيل للمورد')
                         ->icon('heroicon-o-truck')
                         ->schema([
+
                             Select::make('supplier_id')
                                 ->label('اختر المورد')
                                 ->options(Supplier::pluck('name', 'id'))
                                 ->searchable()
                                 ->preload()
                                 ->required(),
+
+
                         ])
                         ->action(function ($records, array $data) {
                             foreach ($records as $record) {
@@ -358,6 +363,10 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
+
+
+
+
                     Action::make('bulkEditProfitAndDiscount')
                         ->label('تعديل الربح والخصم')
                         ->icon('heroicon-o-currency-dollar')

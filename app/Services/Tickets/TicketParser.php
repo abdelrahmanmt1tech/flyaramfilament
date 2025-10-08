@@ -2,6 +2,7 @@
 
 namespace App\Services\Tickets;
 
+use App\Models\Airport;
 use App\Services\Tickets\DTOs\{TicketDTO, PriceDTO, PassengerDTO, SegmentDTO};
 
 class TicketParser
@@ -147,6 +148,49 @@ class TicketParser
     private function determineTicketType(array $lines): array
     {
         $joined = strtoupper(implode("\n", $lines));
+        $first  = strtoupper(trim($lines[0] ?? ''));
+
+        // 1) Air Block في أول سطر فقط
+        if (preg_match('/^\s*AIR-BLK\b/', $first)) {
+            return ['حجز جماعي (AIR-BLK)', 'AIR-BLK'];
+        }
+
+        // 2) EMD / REI
+        if (preg_match('/\bEMD\b/u', $joined)) {
+            return ['خدمة إلكترونية (EMD)', 'EMD'];
+        }
+        if (preg_match('/\b(REI|REISSUE|REISS)\b/u', $joined)) {
+            return ['تذكرة معاد إصدارها', 'REI'];
+        }
+
+        if (
+            preg_match('/^T-\s*(?:K)?\d{3}-?\d{10}\b/m', $joined) ||
+            preg_match('/\bTKOK\b/u', $joined) ||
+            preg_match('/\/\/ET[A-Z0-9]{2}\b/u', $joined)
+        ) {
+            return ['تذكرة مؤكدة', 'TKT'];
+        }
+
+
+        // 4) مستندات/تقارير أخرى
+        if (preg_match('/\bSPDR\b/u', $joined)) return ['تقرير مبيعات (SPDR)', 'SPDR'];
+        if (preg_match('/\bADMA\b/u', $joined))  return ['مذكرة خصم للوكيل (ADMA)', 'ADMA'];
+        if (preg_match('/\bACMA\b/u', $joined))  return ['مذكرة ائتمان للوكيل (ACMA)', 'ACMA'];
+        if (preg_match('/\bADM\b/u',  $joined))  return ['مذكرة خصم (ADM)', 'ADM'];
+        if (preg_match('/\bACMa\b/u',  $joined))  return ['حافز من الطيران تكون على التذكرة  (ACMa)', 'ACMa'];
+        if (preg_match('/\bACM\b/u',  $joined))  return ['مذكرة ائتمان (ACM)', 'ACM'];
+
+        // 5) AMD إن لم يوجد شيء أقوى
+        if (preg_match('/\bAMD\b/u', $joined)) {
+            return ['سند/مذكرة محاسبية (AMD)', 'AMD'];
+        }
+
+        // 6) RQ كخيار أخير
+        if (preg_match('/\bRQ\b/u', $joined)) {
+            return ['حجز غير مؤكد (RQ)', 'RQ'];
+        }
+
+
 
         $checks = [
             ['/\b(VOID|CANCEL|CANCELLED|CANXX|CANX|CNL|CXL|CXLD)\b/u', 'ملغاة / مسترجعة', 'VOID'],
@@ -248,7 +292,7 @@ class TicketParser
     private function isDomesticTicket(TicketDTO $dto): bool
     {
         // قائمة مطارات السعودية (يمكن توسعتها)
-        static $saAirports = [
+         $saAirports = [
             'JED','RUH','DMM','MED','ELQ','TIF','TUU','HOF','EAM','GIZ','URY','AJF','QUR',
             'BHH','EJH','HAS','ABT','AQI','RAE','DWD','HBT','RAH','SHW','TUI','WAE','KMC',
             'RGB','SLF','UZH','ZUL','QUN','NUM','RSI','ULH','YNB','AHB',
@@ -257,10 +301,10 @@ class TicketParser
         ];
 
 
-        // todo  25
-
-
-
+        $airports = Airport::where("is_internal")->pluck("iata")->toArray();
+        if ($airports && $airports > 0 ){
+            $saAirports =array_merge($saAirports ,$airports) ;
+        }
 
         if (empty($dto->segments)) {
             return false; // بدون مقاطع نعتبرها ليست داخلية
@@ -716,6 +760,48 @@ class TicketParser
             // عيّن yearHint لاستخدامه بمواعيد المقاطع
             $this->yearHint = (int)substr($dto->issueDate, 0, 4);
         }
+
+
+
+
+        // بدّل {8} بـ {7,9} (أكثر أمانًا) أو {8,9} لو متأكد إنه لا يقل عن 8
+        if (preg_match('/^TK(?:OK|TL)(\d{2}[A-Z]{3})\/([A-Z0-9]{7,9})(?:\/[^\/]*)?\/ET([A-Z0-9]{2})/u', $line, $m)) {
+            $dto->issueDate       = $this->attachYear($m[1]);
+            $this->yearHint       = (int) substr($dto->issueDate, 0, 4);
+            $dto->issuingOfficeId = $m[2];  // ← الآن ستلتقط ULHS22220 كاملة
+            $dto->issuingCarrier  = $m[3];
+            $dto->officeId        = $dto->issuingOfficeId; // أولوية لمكتب الإصدار
+            if (empty($dto->validatingCarrier)) $dto->validatingCarrier = $dto->issuingCarrier;
+            return;
+        }
+
+// fallback بدون //ET
+        if (preg_match('/^TK(?:OK|TL)(\d{2}[A-Z]{3})\/([A-Z0-9]{7,9})/u', $line, $m)) {
+            $dto->issueDate       = $this->attachYear($m[1]);
+            $this->yearHint       = (int) substr($dto->issueDate, 0, 4);
+            $dto->issuingOfficeId = $m[2];  // ← سيلتقط 8 أو 9 خانات
+            $dto->officeId        = $dto->issuingOfficeId;
+            return;
+        }
+
+        // fallback أبسط: تاريخ + مكتب دون ET{CC}
+        if (preg_match('/^TK(?:OK|TL)(\d{2}[A-Z]{3})\/([A-Z0-9]{8})/u', $line, $m)) {
+            $dto->issueDate = $this->attachYear($m[1]);
+            $this->yearHint = (int)substr($dto->issueDate, 0, 4);
+            $dto->issuingOfficeId = $m[2];
+            $dto->officeId        = $dto->issuingOfficeId;
+            return;
+        }
+
+        // شكل تاريخ فقط (الحالي لديك)
+        if (preg_match('/TK(?:OK|TL)(\d{2}[A-Z]{3})/u', $line, $m)) {
+            $dto->issueDate = $this->attachYear($m[1]);
+            $this->yearHint = (int)substr($dto->issueDate, 0, 4);
+        }
+
+
+
+
     }
 
     private function parseDLine(string $line, TicketDTO $dto): void
@@ -768,7 +854,6 @@ class TicketParser
 
         // (أ) PNR + branch + office_id من أول حقول
         if (preg_match('/^\s*([A-Z0-9]{6})(\d{3})?;([^;]*);([^;]*)/', $payload, $m)) {
-
             $dto->pnr  =   $dto->pnr    ?? $m[1];
             $dto->branchCode  = $dto->branchCode  ?? trim($m[3]);
             $dto->officeId    = $dto->officeId    ?? trim($m[4]);

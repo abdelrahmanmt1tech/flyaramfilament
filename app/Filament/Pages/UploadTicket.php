@@ -2,9 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\AccountStatement;
 use App\Models\Airline;
 use App\Models\Airport;
 use App\Models\AirportRoute;
+use App\Models\Branch;
 use App\Models\Currency;
 use App\Models\Passenger;
 use App\Models\Supplier;
@@ -30,6 +32,11 @@ class UploadTicket extends Page
 
 
     public $defaultAction = 'onboarding';
+
+
+    protected static string | \UnitEnum | null $navigationGroup = "رفع وتضمين";
+
+
 
     public function getTitle(): string
     {
@@ -234,7 +241,10 @@ class UploadTicket extends Page
     }
 
 
-    protected function storeTicketDto(\App\Services\Tickets\DTOs\TicketDTO $dto, ?string $sourceFileName = null): void
+    protected function storeTicketDto(
+        \App\Services\Tickets\DTOs\TicketDTO $dto,
+        ?string $sourceFileName = null
+    ): void
     {
         /*
         // مثال تبسيطي للتأكد من عدم التكرار:
@@ -248,8 +258,49 @@ class UploadTicket extends Page
 
 */
 
+/*
+ *
+ * TRUNCATE `invoice_ticket`;
+TRUNCATE `tickets`;
+TRUNCATE `ticket_passengers`;
+TRUNCATE `ticket_segments`;
+TRUNCATE `ticket_taxes`;
+
+
+
+
+        */
 
         DB::transaction(function () use ($dto) {
+
+
+
+            if ($dto->supplier)
+            $supplier =Supplier::firstOrCreate(
+                [ 'name' => $dto->supplier ],
+                ['name' => $dto->supplier , 'tax_number' => null ,] );
+
+
+            $sales_user_id =  null ;
+
+            $branch_id =  null ;
+            $branchCode =$dto->issuingOfficeId ?? $dto->pnrBranchCode  ?? $dto->branchCode ;
+            if ($dto->createdByUser ){
+                $branch_id = Branch::where('iata_code' , $branchCode)->first()?->id ;
+            }
+
+
+
+
+            if ($dto->createdByUser ){
+                $sales_user_id = User::where('iata_code' , $dto->createdByUser)->first()?->id ;
+            }
+
+
+
+//salesRep
+
+
             $ticket = Ticket::create([
                 'gds' => $dto->gds,
                 'airline_name' => $dto->airlineName,
@@ -270,15 +321,36 @@ class UploadTicket extends Page
                 'branch_code' => $dto->branchCode,
                 'office_id' => $dto->officeId,
                 'created_by_user' => $dto->createdByUser,
-                'supplier_id' => $dto->supplier ? optional(Supplier::firstOrCreate(['name' => $dto->supplier], ['tax_number' => null]))->id : null,
+                'supplier_id' => $dto->supplier ? optional(  $supplier )->id : null,
                 'currency_id' => $dto->price?->baseCurrency ?
                     optional(Currency::firstOrCreate(['symbol' => $dto->price->baseCurrency], ['name' => $dto->price->baseCurrency])->first())->id : null,
                 'cost_base_amount' => $dto->price->baseAmount,
                 'cost_tax_amount' => collect($dto->price->taxes)->sum(fn($t) => (float)$t['amount']),
                 'cost_total_amount' => $dto->price->totalAmount,
                 // profit/discount/extra_tax يضيفهم الأدمن لاحقًا أو ندعهم null
+
+
+
+                'pnr_branch_code' => $dto->pnrBranchCode,
+                'pnr_office_id' => $dto->pnrOfficeId,
+
+
+
+                'issuing_office_id' => $dto->issuingOfficeId,
+                'issuing_carrier' => $dto->issuingCarrier,
+                'sales_rep' => $dto->salesRep,
+                'carrier_pnr_carrier' => $dto->carrierPnrCarrier,
+                'carrier_pnr' => $dto->carrierPnr,
+                'sales_user_id' => $sales_user_id,
+                'branch_id' => $branch_id,
             ]);
 
+            if ($branch_id){
+                AccountStatement::logTicket($ticket, Branch::class, $branch_id);
+            }
+            if ($ticket->supplier_id) {
+                AccountStatement::logTicket($ticket, Supplier::class,$ticket->supplier_id , true);
+            }
 
             // passengers
             foreach ($dto->passengers as $p) {
@@ -305,7 +377,6 @@ class UploadTicket extends Page
 
             // segments + routes + airports
             foreach ($dto->segments as $idx => $s) {
-
                 $o = Airport::firstOrCreate(['iata' => $s->origin], ['name' => $s->originName, 'country_code' => $s->originCountry]);
                 $d = Airport::firstOrCreate(['iata' => $s->destination], ['name' => $s->destinationName, 'country_code' => $s->destCountry]);
                 $route = AirportRoute::firstOrCreate(

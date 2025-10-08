@@ -48,4 +48,12 @@ class TicketDTO
     public ?string $carrierPnr  = null;
 
 
+    public ?string $pnrBranchCode = null; // من MUC1A (مثال: 0101)
+    public ?string $pnrOfficeId   = null; // من MUC1A (مثال: ULHS22220)
+
+    public ?string $issuingOfficeId   = null; // من TKOK/TKTL (مثال: EJHS22104)
+    public ?string $issuingCarrier    = null;
+
+
+
 }

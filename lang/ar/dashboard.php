@@ -33,6 +33,7 @@ return [
         'account_statement' => 'كشف الحساب',
         'free_invoices' => 'الفواتير الحرة',
         'reservations' => 'الحجوزات',
+        'ticket-matching' => 'مطابقه التذاكر',
     ],
 
     'upload_ticket' => [
