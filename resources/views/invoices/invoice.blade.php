@@ -296,6 +296,8 @@
             <th>Due Date</th>
             <td>{{ $invoice->due_date ? $invoice->due_date/*->format('Y-m-d')*/ : '' }}</td>
         </tr>
+
+
         <tr>
             <th>Total Taxes</th>
             <td colspan="2">{{ number_format($invoice->total_taxes ?? 0, 2) }}</td>
