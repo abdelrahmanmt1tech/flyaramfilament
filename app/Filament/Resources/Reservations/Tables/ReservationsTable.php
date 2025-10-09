@@ -28,7 +28,7 @@ class ReservationsTable
     {
         return $table
             ->modifyQueryUsing(function (Builder $query): Builder {
-                return $query->with(['currency', 'actor', 'related']);
+                return $query->with(['items', 'related', 'passenger', 'ticket']);
             })
             ->columns([
                 // Reservation Number
@@ -39,24 +39,36 @@ class ReservationsTable
                     ->copyable(),
 
                 // Reservation Type
-                TextColumn::make('reservation_type')
+                TextColumn::make('items.reservation_type')
                     ->label('نوع الحجز')
                     ->badge()
                     ->colors([
                         'success' => 'hotel',
                         'warning' => 'car',
                         'info' => 'tourism',
+                        'primary' => 'visa',
+                        'secondary' => 'international_license',
+                        'gray' => 'train',
+                        'purple' => 'meeting_room',
+                        'pink' => 'internal_transport',
+                        'indigo' => 'other',
                     ])
                     ->formatStateUsing(fn($state) => match($state) {
                         'hotel' => 'فندق',
                         'car' => 'سيارة',
                         'tourism' => 'سياحة',
+                        'visa' => 'تأشيرات',
+                        'international_license' => 'رخصة قيادة دولية',
+                        'train' => 'حجز قطار',
+                        'meeting_room' => 'حجز قاعة إجتماعات',
+                        'internal_transport' => 'تنقلات داخلية وأخرى',
+                        'other' => 'أخرى',
                         default => $state
                     })
                     ->sortable(),
 
                 // Actor (المسافر)
-                TextColumn::make('actor.first_name')
+                TextColumn::make('passenger.first_name')
                     ->label('المسافر')
                     ->placeholder('-')
                     ->searchable()
@@ -68,93 +80,6 @@ class ReservationsTable
                     ->placeholder('-')
                     ->searchable()
                     ->sortable(),
-
-                // Destination
-                TextColumn::make('destination')
-                    ->label('الوجهة')
-                    ->searchable()
-                    ->sortable(),
-
-                // Dates
-                TextColumn::make('date')
-                    ->label('تاريخ الحجز')
-                    ->date()
-                    ->sortable(),
-
-                // Hotel Specific
-                TextColumn::make('hotel_name')
-                    ->label('الفندق')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
-
-                TextColumn::make('arrival_date')
-                    ->label('تاريخ الوصول')
-                    ->date()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->sortable(),
-
-                // Car Specific
-                TextColumn::make('service_type')
-                    ->label('نوع الخدمة')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('from_date')
-                    ->label('من تاريخ')
-                    ->date()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->sortable(),
-
-                // Financial Columns
-                TextColumn::make('purchase_amount')
-                    ->label('سعر الشراء')
-                    ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
-                    ->sortable(),
-
-                TextColumn::make('sale_amount')
-                    ->label('سعر البيع')
-                    ->badge()
-                    ->color(function ($record) {
-                        if ($record->sale_amount < $record->purchase_amount) {
-                            return "danger";
-                        }
-                        return "success";
-                    })
-                    ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
-                    ->sortable(),
-
-                TextColumn::make('commission_amount')
-                    ->label('العمولة')
-                    ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
-                    ->sortable()
-                    ->toggleable(),
-
-                // Payment Methods
-                TextColumn::make('cash_payment')
-                    ->label('الدفع نقداً')
-                    ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('visa_payment')
-                    ->label('الدفع بفيزا')
-                    ->money(fn($record) => $record->currency?->symbol ?: 'SAR', true)
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                // Agent
-                TextColumn::make('agent_name')
-                    ->label('اسم الوكيل')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
-
-                // Additional Info
-                TextColumn::make('special_requests')
-                    ->label('طلبات خاصة')
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('notes')
-                    ->label('ملاحظات')
-                    ->limit(30)
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 // TrashedFilter::make(),

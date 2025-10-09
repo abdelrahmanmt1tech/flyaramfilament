@@ -21,7 +21,7 @@ return new class extends Migration
 
              $table->foreignId('passenger_id')->nullable()->constrained()->nullOnDelete();
 
-             $table->integer('reservation_number')->nullable();
+             $table->string('reservation_number')->nullable();
              
             $table->timestamps();
         });

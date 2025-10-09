@@ -23,17 +23,25 @@ class ReservationForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $reservationTypes = [
+            'hotel' => 'فندق',
+            'car' => 'سيارة',
+            'tourism' => 'سياحة',
+            'visa' => 'تأشيرات',
+            'international_license' => 'رخصة قيادة دولية',
+            'train' => 'حجز قطار',
+            'meeting_room' => 'حجز قاعة إجتماعات',
+            'internal_transport' => 'تنقلات داخلية ',
+            'other' => 'أخرى',
+        ];
+
         return $schema->components([
             // القسم الأساسي (بيانات الحجز الرئيسية)
             Section::make('المعلومات الأساسية')->schema([
                 TextInput::make('reservation_number')
                     ->label('رقم الحجز')
-                    ->numeric()
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->disabled()
-                    ->dehydrated()
-                    ->default(fn() => 'RSV' . date('Ymd') . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT)),
+                    ->readOnly(),
+
 
                 // ربط مع تذكرة (اختياري)
                 Select::make('ticket_id')
@@ -103,122 +111,140 @@ class ReservationForm
                 ->columns(2),
 
             // عناصر الحجز (Repeater مرتبط بجدول reservation_items)
-                Repeater::make('items')
-                    ->label('إضافة عنصر')
-                    ->relationship('items')
-                    ->grid(1)
-                    ->collapsible()
-                    ->addActionLabel('إضافة عنصر')
-                    ->schema([
-                        Section::make('بيانات العنصر الأساسية')->schema([
-                            Select::make('reservation_type')
-                                ->label('نوع الحجز')
-                                ->options([
-                                    'hotel' => 'فندق',
-                                    'car' => 'سيارة',
-                                    'tourism' => 'سياحة',
-                                ])
-                                ->required()
-                                ->live()
-                                ->native(false),
+            Repeater::make('items')
+                ->label('إضافة عنصر')
+                ->relationship('items')
+                ->grid(1)
+                ->collapsible()
+                ->addActionLabel('إضافة عنصر')
+                ->schema([
+                    Section::make('بيانات العنصر الأساسية')->schema([
+                        Select::make('reservation_type')
+                            ->label('نوع الحجز')
+                            ->options($reservationTypes)
+                            ->required()
+                            ->live() // تأكد إن الحقل live للتفاعل الديناميكي
+                            ->native(false)
+                            ->afterStateUpdated(function ($set, $state) use ($reservationTypes) {
+                                // تحديث service_type بالقيمة العربية
+                                if ($state && $state !== 'other') {
+                                    $set('service_type', $reservationTypes[$state] ?? $state);
+                                } else {
+                                    $set('service_type', null); // لو اختار 'other' يفضّي الحقل
+                                }
+                            }),
+                        DatePicker::make('date')
+                            ->label('تاريخ الحجز')
+                            ->default(now()),
 
-                            DatePicker::make('date')
-                                ->label('تاريخ الحجز')
-                                ->default(now()),
+                        TextInput::make('agent_name')
+                            ->label('اسم الوكيل'),
 
-                            TextInput::make('agent_name')
-                                ->label('اسم الوكيل'),
+                        TextInput::make('destination')
+                            ->label('الوجهة'),
+                    ])->columns(2),
 
-                            TextInput::make('destination')
-                                ->label('الوجهة'),
+
+                    // حقول الفندق (تظهر عند اختيار فندق)
+                    Section::make('معلومات الفندق')
+                        ->visible(fn(callable $get) => $get('reservation_type') === 'hotel')
+                        ->schema([
+                            TextInput::make('hotel_name')->label('اسم الفندق')->required(),
+                            TextInput::make('confirmation_number')->label('رقم التأكيد'),
+                            TextInput::make('room_type')->label('نوع الغرفة'),
+                            TextInput::make('destination_type')->label('نوع الوجهة'),
+                            Grid::make(3)->schema([
+                                TextInput::make('room_count')->label('عدد الغرف')->numeric()->minValue(1),
+                                TextInput::make('nights_count')->label('عدد الليالي')->numeric()->minValue(1),
+                                TextInput::make('room_price')->label('سعر الغرفة')->numeric()->minValue(0)->suffix('SAR'),
+                            ]),
+                            Grid::make(3)->schema([
+                                DatePicker::make('arrival_date')->label('تاريخ الوصول')->required(),
+                                DatePicker::make('departure_date')->label('تاريخ المغادرة')->required(),
+                                TextInput::make('total_amount')->label('المبلغ الإجمالي')->numeric()->minValue(0)->suffix('SAR'),
+                            ]),
                         ])->columns(2),
 
 
-                        // حقول الفندق (تظهر عند اختيار فندق)
-                        Section::make('معلومات الفندق')
-                            ->visible(fn(callable $get) => $get('reservation_type') === 'hotel')
-                            ->schema([
-                                TextInput::make('hotel_name')->label('اسم الفندق')->required(),
-                                TextInput::make('confirmation_number')->label('رقم التأكيد'),
-                                TextInput::make('room_type')->label('نوع الغرفة'),
-                                TextInput::make('destination_type')->label('نوع الوجهة'),
-                                Grid::make(3)->schema([
-                                    TextInput::make('room_count')->label('عدد الغرف')->numeric()->minValue(1),
-                                    TextInput::make('nights_count')->label('عدد الليالي')->numeric()->minValue(1),
-                                    TextInput::make('room_price')->label('سعر الغرفة')->numeric()->minValue(0)->suffix('SAR'),
-                                ]),
-                                Grid::make(3)->schema([
-                                    DatePicker::make('arrival_date')->label('تاريخ الوصول')->required(),
-                                    DatePicker::make('departure_date')->label('تاريخ المغادرة')->required(),
-                                    TextInput::make('total_amount')->label('المبلغ الإجمالي')->numeric()->minValue(0)->suffix('SAR'),
-                                ]),
-                            ])->columns(2),
-
-
-                        Section::make('المعلومات')
-                            ->visible(fn(callable $get) => $get('reservation_type') === 'car' || $get('reservation_type') === 'tourism')
-                            ->schema([
-                                TextInput::make('service_type')->label('نوع الخدمة')->required(),
-                                TextInput::make('document')->label('المستند'),
-                                Grid::make(2)->schema([
-                                    TextInput::make('count')->label('العدد')->numeric()->minValue(1),
-                                    TextInput::make('unit_price')->label('سعر الوحدة')->numeric()->minValue(0)->suffix('SAR'),
-                                ]),
-                                Grid::make(2)->schema([
-                                    DatePicker::make('from_date')->label('من تاريخ')->required(),
-                                    DatePicker::make('to_date')->label('إلى تاريخ')->required(),
-                                ]),
-                                TextInput::make('service_details')->label('تفاصيل الخدمة'),
-                                TextInput::make('additional_info')->label('معلومات إضافية'),
-                            ])->columns(2),
-
-
-                        Section::make('الجهات ذات الصلة')->schema([
-                            Select::make('supplier_id')
-                                ->label('المورد')
-                                ->relationship('supplier', 'name')
-                                ->searchable()
-                                ->preload()
-                                ->native(false),
-
-                            Select::make('currency_id')
-                                ->label('العملة')
-                                ->relationship('currency', 'symbol')
-                                ->searchable()
-                                ->preload()
-                                ->native(false)
-                                ->required(),
-
-                            Select::make('safes_bank_id')
-                                ->label('الخزنة / البنك')
-                                ->relationship('safesBank', 'name')
-                                ->searchable()
-                                ->preload()
-                                ->native(false),
-                        ])->columns(3),
-
-                        Section::make('معلومات مالية')->schema([
-                            Grid::make(3)->schema([
-                                TextInput::make('purchase_amount')->label('سعر الشراء')->numeric()->minValue(0)->suffix('SAR'),
-                                TextInput::make('sale_amount')->label('سعر البيع')->numeric()->minValue(0)->suffix('SAR'),
-                                TextInput::make('commission_amount')->label('العمولة')->numeric()->minValue(0)->suffix('SAR'),
+                    Section::make('المعلومات')
+                        ->visible(fn(callable $get) => in_array($get('reservation_type'), ['car', 'tourism', 'visa', 'international_license', 'train', 'meeting_room', 'internal_transport', 'other']))
+                        ->schema([
+                            TextInput::make('service_type')
+                                ->label('نوع الخدمة')
+                                ->required()
+                                ->live() // جعل الحقل live للتفاعل
+                                ->disabled(fn(callable $get) => $get('reservation_type') !== 'other') // تفعيل الحقل بس لو other
+                                ->default(function (callable $get) use ($reservationTypes) {
+                                    $type = $get('reservation_type');
+                                    return ($type && $type !== 'other') ? ($reservationTypes[$type] ?? $type) : null;
+                                })
+                                ->afterStateHydrated(function ($set, $state, callable $get) use ($reservationTypes) {
+                                    // تحديث service_type عند تحميل البيانات
+                                    $type = $get('reservation_type');
+                                    if ($type && $type !== 'other') {
+                                        $set('service_type', $reservationTypes[$type] ?? $type);
+                                    }
+                                }),
+                            TextInput::make('document')->label('المستند'),
+                            Grid::make(2)->schema([
+                                TextInput::make('count')->label('العدد')->numeric()->minValue(1),
+                                TextInput::make('unit_price')->label('سعر الوحدة')->numeric()->minValue(0)->suffix('SAR'),
                             ]),
                             Grid::make(2)->schema([
-                                TextInput::make('cash_payment')->label('الدفع نقداً')->numeric()->minValue(0)->suffix('SAR'),
-                                TextInput::make('visa_payment')->label('الدفع بفيزا')->numeric()->minValue(0)->suffix('SAR'),
+                                DatePicker::make('from_date')->label('من تاريخ')->required(),
+                                DatePicker::make('to_date')->label('إلى تاريخ')->required(),
                             ]),
-                            TextInput::make('account_number')->label('رقم الحساب'),
-                        ])->columns(1),
-
-
-                        // ملاحظات عامة على العنصر
-                        Section::make('ملاحظات')->schema([
-                            TextInput::make('special_requests')->label('طلبات خاصة'),
-                            TextInput::make('additions')->label('إضافات'),
-                            TextInput::make('notes')->label('ملاحظات'),
-                            TextInput::make('added_value')->label('القيمة المضافة'),
+                            TextInput::make('service_details')->label('تفاصيل الخدمة'),
+                            TextInput::make('additional_info')->label('معلومات إضافية'),
                         ])->columns(2),
-                    ])->columnSpanFull(),
+
+
+                    Section::make('الجهات ذات الصلة')->schema([
+                        Select::make('supplier_id')
+                            ->label('المورد')
+                            ->relationship('supplier', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->native(false),
+
+                        Select::make('currency_id')
+                            ->label('العملة')
+                            ->relationship('currency', 'symbol')
+                            ->searchable()
+                            ->preload()
+                            ->native(false)
+                            ->required(),
+
+                        Select::make('safes_bank_id')
+                            ->label('الخزنة / البنك')
+                            ->relationship('safesBank', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->native(false),
+                    ])->columns(3),
+
+                    Section::make('معلومات مالية')->schema([
+                        Grid::make(3)->schema([
+                            TextInput::make('purchase_amount')->label('سعر الشراء')->numeric()->minValue(0)->suffix('SAR'),
+                            TextInput::make('sale_amount')->label('سعر البيع')->numeric()->minValue(0)->suffix('SAR'),
+                            TextInput::make('commission_amount')->label('العمولة')->numeric()->minValue(0)->suffix('SAR'),
+                        ]),
+                        Grid::make(2)->schema([
+                            TextInput::make('cash_payment')->label('الدفع نقداً')->numeric()->minValue(0)->suffix('SAR'),
+                            TextInput::make('visa_payment')->label('الدفع بفيزا')->numeric()->minValue(0)->suffix('SAR'),
+                        ]),
+                        TextInput::make('account_number')->label('رقم الحساب'),
+                    ])->columns(1),
+
+
+                    // ملاحظات عامة على العنصر
+                    Section::make('ملاحظات')->schema([
+                        TextInput::make('special_requests')->label('طلبات خاصة'),
+                        TextInput::make('additions')->label('إضافات'),
+                        TextInput::make('notes')->label('ملاحظات'),
+                        TextInput::make('added_value')->label('القيمة المضافة'),
+                    ])->columns(2),
+                ])->columnSpanFull(),
         ]);
     }
 

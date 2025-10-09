@@ -19,6 +19,28 @@ class Reservation extends Model
         'reservation_number',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+    
+        static::creating(function ($reservation) {
+            if (empty($reservation->reservation_number)) {
+                $reservation->reservation_number = static::generateReservationNumber();
+            }
+        });
+    }
+    
+    /**
+     * Generate reservation number without heavy DB loop
+     */
+    public static function generateReservationNumber(): string
+    {
+        $nextId = (static::max('id') ?? 0) + 1;
+    
+        return 'RSV' . date('Ymd') . str_pad($nextId, 5, '0', STR_PAD_LEFT);
+    }
+    
+
     /**
      * Get the related model (Client, Supplier, Branch, or Franchise)
      */
