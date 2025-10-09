@@ -24,6 +24,9 @@ return new class extends Migration {
             $table->decimal('debit', 15, 2)->default(0);
             $table->decimal('credit', 15, 2)->default(0);
             $table->decimal('balance', 15, 2)->default(0);
+
+            $table->foreignId('reservation_id')->nullable()->constrained()->cascadeOnDelete();
+            
         
             $table->timestamps();
         

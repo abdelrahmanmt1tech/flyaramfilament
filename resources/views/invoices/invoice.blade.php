@@ -131,9 +131,12 @@
         ];
         $company = \App\Models\Setting::whereIn('key', $companyKeys)->pluck('value', 'key');
     @endphp
-@if($invoice->type === 'refund')
-<h1 class="refund">REFUND INVOICE</h1>
+   @if(($invoice->type ?? null) === 'refund')
+   <h2 style="background:#f2f2f2;border:2px dashed #d33;color:#d33;text-align:center;padding:8px;margin-top:0;">
+       فاتورة استرجاع / REFUND INVOICE
+   </h2>
 @endif
+
     <h3 class="section-title">Company Details</h3>
     <table>
         <tr>

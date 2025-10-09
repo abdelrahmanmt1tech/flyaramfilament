@@ -74,7 +74,7 @@ class ReservationForm
                     ->label('نوع الجهة')
                     ->options([
                         Client::class => 'عميل',
-                        Supplier::class => 'مورد',
+                        // Supplier::class => 'مورد',
                         Branch::class => 'فرع',
                         Franchise::class => 'فرانشايز',
                     ])
@@ -94,7 +94,7 @@ class ReservationForm
 
                         return match ($type) {
                             Client::class => Client::pluck('name', 'id')->toArray(),
-                            Supplier::class => Supplier::pluck('name', 'id')->toArray(),
+                            // Supplier::class => Supplier::pluck('name', 'id')->toArray(),
                             Branch::class => Branch::pluck('name', 'id')->toArray(),
                             Franchise::class => Franchise::pluck('name', 'id')->toArray(),
                             default => [],
@@ -161,7 +161,6 @@ class ReservationForm
                             Grid::make(3)->schema([
                                 DatePicker::make('arrival_date')->label('تاريخ الوصول')->required(),
                                 DatePicker::make('departure_date')->label('تاريخ المغادرة')->required(),
-                                TextInput::make('total_amount')->label('المبلغ الإجمالي')->numeric()->minValue(0)->suffix('SAR'),
                             ]),
                         ])->columns(2),
 
@@ -196,6 +195,8 @@ class ReservationForm
                             ]),
                             TextInput::make('service_details')->label('تفاصيل الخدمة'),
                             TextInput::make('additional_info')->label('معلومات إضافية'),
+                            // TextInput::make('total_amount')->label('المبلغ الإجمالي')->numeric()->minValue(0)->suffix('SAR'),
+
                         ])->columns(2),
 
 
@@ -224,8 +225,11 @@ class ReservationForm
                     ])->columns(3),
 
                     Section::make('معلومات مالية')->schema([
-                        Grid::make(3)->schema([
+                        Grid::make(2)->schema([
+                            TextInput::make('total_amount')->label('المبلغ الإجمالي')->numeric()->minValue(0)->suffix('SAR'),
                             TextInput::make('purchase_amount')->label('سعر الشراء')->numeric()->minValue(0)->suffix('SAR'),
+                        ]),
+                        Grid::make(2)->schema([
                             TextInput::make('sale_amount')->label('سعر البيع')->numeric()->minValue(0)->suffix('SAR'),
                             TextInput::make('commission_amount')->label('العمولة')->numeric()->minValue(0)->suffix('SAR'),
                         ]),

@@ -17,7 +17,8 @@ class Invoice extends Model
         'notes',
         'invoiceable_type',
         'invoiceable_id',
-        'reference_num'
+        'reference_num',
+        'reservation_id'
     ];
 
     protected $casts = [
@@ -47,5 +48,10 @@ class Invoice extends Model
     {
         return $this->belongsTo(Invoice::class, 'reference_num', 'invoice_number')
             ->where('type', '!=', 'refund');
+    }
+
+    public function reservation()
+    {
+        return $this->belongsTo(Reservation::class);
     }
 }

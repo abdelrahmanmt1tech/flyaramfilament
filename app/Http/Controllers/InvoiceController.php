@@ -13,6 +13,15 @@ class InvoiceController extends Controller
     
         return view('invoices.invoice', compact('tickets', 'invoice'));
     }
+
+    public function printReservationInvoice(Invoice $invoice)
+    {
+        $reservation = $invoice->reservation()
+            ->with(['items.supplier', 'passenger', 'related'])
+            ->first();
+
+        return view('invoices.reservation_invoice', compact('invoice', 'reservation'));
+    }
     
     
 }

@@ -13,6 +13,7 @@ Route::get('lang/{locale}', [LanguageController::class, 'switch'])->name('langua
 
 
 Route::get('/invoices/{invoice}/print', [InvoiceController::class, 'printInvoice'])->name('invoices.print');
+Route::get('/reservations/invoices/{invoice}/print', [InvoiceController::class, 'printReservationInvoice'])->name('reservations.invoices.print');
 
 Route::get('/free-invoices/{freeInvoice}/print', [FreeInvoiceController::class, 'print'])
     ->name('free-invoices.print');
