@@ -19,13 +19,14 @@ return new class extends Migration {
             $table->string('ticket_id')->nullable(); // Ticket reference/ID
             $table->string('lpo_no')->nullable(); // LPO (Local Purchase Order) number
             $table->string('sector')->nullable();
+            $table->enum('type',['sale','refund'])->default('sale');
         
             // Financial fields
             $table->decimal('debit', 15, 2)->default(0);
             $table->decimal('credit', 15, 2)->default(0);
             $table->decimal('balance', 15, 2)->default(0);
 
-            $table->foreignId('reservation_id')->nullable()->constrained()->cascadeOnDelete();
+            // $table->foreignId('reservation_id')->nullable()->constrained()->cascadeOnDelete();
             
         
             $table->timestamps();

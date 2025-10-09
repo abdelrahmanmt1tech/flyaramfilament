@@ -23,6 +23,7 @@ class AccountStatement extends Model
         'credit',
         'balance',
         'reservation_id',
+        'type'
     ];
 
     protected $casts = [
@@ -60,7 +61,7 @@ class AccountStatement extends Model
         });
     }
 
-    public static function logTicket($record, $type, $id, $isSupplier = false)
+    public static function logTicket($record, $type, $id, $isSupplier = false , $statemenType = 'sale')
     {
         return self::create([
             'statementable_type' => $type,
@@ -73,6 +74,8 @@ class AccountStatement extends Model
             'debit'              => $isSupplier ? 0 : $record->sale_total_amount,
             'credit'             => $isSupplier ? $record->sale_total_amount : 0,
             'balance'            => $record->sale_total_amount,
+            'type'            => $statemenType,
+
         ]);
     }
 

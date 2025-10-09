@@ -31,7 +31,7 @@ return new class extends Migration
 
             $table->date('due_date')->nullable()->default(now());
 
-            $table->foreignId('reservation_id')->nullable()->constrained()->cascadeOnDelete();
+            // $table->foreignId('reservation_id')->nullable()->constrained()->cascadeOnDelete();
 
         
             $table->timestamps();

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Reservations\Tables;
 
+use App\Models\AccountStatement;
 use App\Models\Invoice;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -216,6 +217,21 @@ class ReservationsTable
                             'invoiceable_id'   => $record->related_id,
                             'reservation_id'   => $record->id,
                             'reference_num'    => $original->invoice_number,
+                        ]);
+
+                        AccountStatement::create([
+                            'statementable_type'=> $record->accountStatement->first()->statementable_type,
+                            'statementable_id'=> $record->accountStatement->first()->statementable_id,
+                            'date'=> now(),
+                            'doc_no'=> $refundNumber,
+                            'ticket_id'=> $record->accountStatement->first()->ticket_id,
+                            'lpo_no'=> $record->accountStatement->first()->lpo_no,
+                            'sector'=> $record->accountStatement->first()->sector,
+                            'debit'=> $record->accountStatement->first()->credit,
+                            'credit'=> $record->accountStatement->first()->debit,
+                            'reservation_id'=> $record->id,
+                            'type' => 'refund',
+                                        
                         ]);
 
                         Notification::make()

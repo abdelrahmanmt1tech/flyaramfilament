@@ -732,7 +732,16 @@ class TicketsTable
 
                                     // تحديث حالة التذكرة
                                     $ticket->update(['is_refunded' => 1 , 'ticket_type' =>'ملغاة / مسترجعة']); //النوع حدثته زي ما هو في الداتا بيز 
+
+                                        AccountStatement::logTicket(
+                                            $ticket,
+                                            $ticket->accountStatement->first()->statementable_type,
+                                            $ticket->accountStatement->first()->statementable_id,
+                                            $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
+                                            'refund'
+                                        );
                                 }
+
 
                                 $createdRefundInvoices[] = $refundInvoiceNumber;
                             }

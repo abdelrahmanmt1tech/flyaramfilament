@@ -72,4 +72,10 @@ class Reservation extends Model
     {
         return $this->hasMany(ReservationItem::class);
     }
+    public function accountStatement()
+    {
+        return $this->hasMany(AccountStatement::class);
+    }
+
+
 }

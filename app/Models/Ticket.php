@@ -89,6 +89,12 @@ class Ticket extends Model
         'price_taxes_breakdown' => 'array',
     ];
 
+
+    public function accountStatement()
+    {
+        return $this->hasMany(AccountStatement::class);
+    }
+
     // علاقات
     public function currency()
     {

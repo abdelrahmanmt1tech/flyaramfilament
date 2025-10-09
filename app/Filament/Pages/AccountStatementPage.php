@@ -312,27 +312,15 @@ class AccountStatementPage extends Page implements HasTable
                     ->label('حالة الفاتورة')
                     ->badge()
                     ->getStateUsing(function ($record) {
-                        // If this statement is tied to a reservation, check reservation invoices
-                        if ($record->reservation_id) {
-                            $hasRefund = Invoice::where('reservation_id', $record->reservation_id)
-                                ->where('type', 'refund')
-                                ->exists();
-                            if ($hasRefund) {
-                                return 'مسترجعة';
-                            }
-                            $hasOriginal = Invoice::where('reservation_id', $record->reservation_id)
-                                ->where('type', '!=', 'refund')
-                                ->exists();
-                            return $hasOriginal ? 'مفوترة' : 'غير مفوترة';
-                        }
-
-                        // Fallback to ticket-based logic
-                        if ($record->hasRefundInvoice()) {
+                        if ($record->type === 'refund') {
                             return 'مسترجعة';
-                        } elseif ($record->hasOriginalInvoice()) {
-                            return 'مفوترة';
                         }
-                        return 'غير مفوترة';
+                        
+                        if ($record->type === 'sale') {
+                            return $record->invoices()->exists() ? 'مفوترة' : 'غير مفوترة';
+                        }
+                        
+                        return null;
                     })
                     ->colors([
                         'success' => 'مفوترة',
@@ -542,12 +530,15 @@ class AccountStatementPage extends Page implements HasTable
                     ->icon('heroicon-o-eye')
                     ->color('success')
                     ->visible(function ($record) {
+                        if($record->type == 'sale'){
                         if ($record->reservation_id) {
                             return Invoice::where('reservation_id', $record->reservation_id)
                                 ->where('type', '!=', 'refund')
                                 ->exists();
                         }
                         return $record->originalInvoices()->exists();
+                    
+                    }
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
@@ -566,12 +557,15 @@ class AccountStatementPage extends Page implements HasTable
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('warning')
                     ->visible(function ($record) {
+                        if ($record->type == 'refund') {
                         if ($record->reservation_id) {
                             return Invoice::where('reservation_id', $record->reservation_id)
                                 ->where('type', 'refund')
                                 ->exists();
                         }
                         return $record->refundInvoices()->exists();
+
+                    }
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
@@ -1091,6 +1085,14 @@ class AccountStatementPage extends Page implements HasTable
                                 foreach ($group['tickets'] as $ticket) {
                                     $refundInvoice->tickets()->attach($ticket->id);
                                     $ticket->update(['is_refunded' => true]);
+
+                                    AccountStatement::logTicket(
+                                        $ticket,
+                                        $ticket->accountStatement->first()->statementable_type,
+                                        $ticket->accountStatement->first()->statementable_id,
+                                        $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
+                                        'refund'
+                                    );
                                 }
 
                                 $createdRefundInvoices[] = [
