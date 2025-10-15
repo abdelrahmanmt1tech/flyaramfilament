@@ -77,50 +77,6 @@ class TabulaExtractor
         return $out;
     }
 
-    // pdftotext -layout (Poppler) كخطة إنقاذ
-    private static function pdftotextLayout(string $pdf): ?string
-    {
-        $bin = trim(shell_exec('command -v pdftotext') ?? '');
-        if ($bin === '' || !is_file($bin)) return null;
-
-        $args = [$bin, '-layout', $pdf, '-'];
-        $proc = new Process($args);
-        $proc->setTimeout(120);
-        $proc->run();
-
-        $txt = (string) $proc->getOutput();
-        return trim($txt) !== '' ? $txt : null;
-    }
-
-    // تحويل نص سطري إلى “صفوف” أولية (كل سطر مصفوفة خلية واحدة)
-    private static function textToRows(string $text): array
-    {
-        $lines = preg_split('/\R/u', $text);
-        $rows = [];
-        foreach ($lines as $l) {
-            $s = trim($l);
-            if ($s !== '') $rows[] = [ $s ];
-        }
-        return $rows;
-    }
-
-    // عدّ صفحات PDF (اختياري لتحسين per-page)
-    private static function getPageCount(string $pdf): ?int
-    {
-        $bin = trim(shell_exec('command -v pdfinfo') ?? '');
-        if ($bin === '' || !is_file($bin)) return null;
-
-        $proc = new Process([$bin, $pdf]);
-        $proc->setTimeout(30);
-        $proc->run();
-        if (!$proc->isSuccessful()) return null;
-
-        if (preg_match('/Pages:\s+(\d+)/', $proc->getOutput(), $m)) {
-            return (int)$m[1];
-        }
-        return null;
-    }
-
 
 
 }

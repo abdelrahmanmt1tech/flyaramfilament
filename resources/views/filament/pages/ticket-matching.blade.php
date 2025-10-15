@@ -16,4 +16,12 @@
             </x-slot>
         </x-filament::card>
     </div>
+
+
+
+    <div>
+        {{ $this->table }}
+    </div>
+
+
 </x-filament::page>

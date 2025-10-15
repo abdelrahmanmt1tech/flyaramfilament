@@ -71,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 FilamentLanguageSwitcherPlugin::make()
                     ->locales([
                         ['code' => 'en', 'flag' => 'us'],
-                        ['code' => 'ar', 'flag' => 'eg'],
+                        ['code' => 'ar', 'flag' => 'sa'],
                     ])
 
                 ,

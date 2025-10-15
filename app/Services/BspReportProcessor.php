@@ -8,17 +8,15 @@ use Illuminate\Support\Facades\DB;
 class BspReportProcessor
 {
 
-    public static function process(string $pdfAbsolutePath, ?string $pages = null): array
+    public static function process(string $pdfAbsolutePath,  $start_date , $end_date): array
     {
-        // 1) استخرج جداول Tabula
         $tables  = \App\Services\TabulaExtractor::extractTablesRobust($pdfAbsolutePath);
         $rows    = \App\Services\TabulaExtractor::tablesToRows($tables);
-
         $tickets = self::parseTicketsFromRows($rows);
         $summary = self::parseSummaryFromRows($rows);
 
         // 3) طابق مع DB وأعد صياغة النتائج كما في المثال
-        $comparison = self::compareWithDatabase($tickets);
+        $comparison = self::compareWithDatabase($tickets , $start_date , $end_date);
 
         return compact('tickets', 'summary', 'comparison');
     }
@@ -248,13 +246,15 @@ class BspReportProcessor
      * - full_ticket_no قد يكون prefix + '-' + ticket_id أو carrier + ticket_id حسب تصميمك.
      * عدّل حقول DB حسب جدولك.
      */
-    public static function compareWithDatabase(array $tickets): array
+    public static function compareWithDatabase(array $tickets , $start_date , $end_date): array
     {
         $out = [];
+        $exTec = [];
 
         foreach ($tickets as $t) {
+            $exTec[] =$t['ticket_id'] ;
             // حرّف “رقم التذكرة الكامل” حسب نظامك:
-            $full = ($t['airline_prefix'] ?? '') . '-' . ($t['ticket_id'] ?? '');
+          //  $full = ($t['airline_prefix'] ?? '') . '-' . ($t['ticket_id'] ?? '');
             $full = $t['ticket_id'];
             $db = DB::table('tickets')
                 ->select([
@@ -264,16 +264,18 @@ class BspReportProcessor
                     'cost_tax_amount',
                     'issue_date',
                     'validating_carrier_code',
+                    'ticket_type_code',
                 ])
                 ->where('ticket_number_core', $full)
+                ->wherebetween('issue_date', [$start_date, $end_date])
                 ->first();
 
             $isInDb = $db !== null;
             $cmp = [
                 'tic_number' => $full,
                 'is_in_db'   => $isInDb,
+                'is_in_pdf'   => true,
                 'tic_attr'   => [
-
                     'amount' => [
                         'amount'     => self::nn($t['transaction_amount'] ?? null),
                         'same_as_db' => $isInDb ? self::eqn($t['transaction_amount'] ?? null, $db->cost_total_amount ?? null) : null,
@@ -284,8 +286,6 @@ class BspReportProcessor
                         'same_as_db' => $isInDb ? self::eqn($t['accd_tax'] ?? null, $db->cost_tax_amount ?? null) : null,
                         'value_db'   => $isInDb ? self::nn($db->cost_tax_amount) : null,
                     ],
-
-
                     // يمكنك إضافة حقول أخرى بنفس الصيغة:
                     // fare_amount, accd_net, std_comm, supp_comm, tax_on_comm, balance, issue_date, carrier...
                 ],
@@ -298,18 +298,54 @@ class BspReportProcessor
                     'same_as_db' => isset($db->issue_date) ? ((string)$t['issue_date'] === (string)$db->issue_date) : null,
                     'value_db'   => $db->issue_date ?? null,
                 ];
-                $cmp['tic_attr']['carrier'] = [
-                    'value'      => $t['carrier'] ?? null,
-                    'same_as_db' => isset($db->carrier) ? ((string)$t['carrier'] === (string)$db->carrier) : null,
-                    'value_db'   => $db->carrier ?? null,
-                ];
+//                $cmp['tic_attr']['carrier'] = [
+//                    'value'      => $t['carrier'] ?? null,
+//                    'same_as_db' => isset($db->carrier) ? ((string)$t['carrier'] === (string)$db->carrier) : null,
+//                    'value_db'   => $db->carrier ?? null,
+//                ];
+
+
             } else {
                 $cmp['tic_attr']['issue_date'] = ['value' => $t['issue_date'] ?? null, 'same_as_db' => null, 'value_db' => null];
-                $cmp['tic_attr']['carrier']    = ['value' => $t['carrier'] ?? null, 'same_as_db' => null, 'value_db' => null];
+//                $cmp['tic_attr']['carrier']    = ['value' => $t['carrier'] ?? null, 'same_as_db' => null, 'value_db' => null];
             }
+
+            $cmp['tic_attr']['type'] =
+                $isInDb ?
+                    ['value' => $t['type'] ?? null, 'same_as_db' => $t['type'] == $db->ticket_type_code , 'value_db' =>  $db->ticket_type_code ??  null] :
+                    ['value' => $t['type'] ?? null, 'same_as_db' => null, 'value_db' => null];
 
             $out[] = $cmp;
         }
+
+
+        $db_tickets = DB::table('tickets')
+            ->select([
+                'ticket_number_core',
+                'ticket_type_code',
+                'cost_total_amount',
+            ])
+            ->whereNotIn('ticket_number_core', $exTec)
+            ->wherebetween('issue_date', [$start_date, $end_date])
+            ->get();
+
+
+        foreach ($db_tickets as $db_ticket){
+            $out[] = [
+                'tic_number' => $db_ticket->ticket_number_core,
+                'is_in_db'   => true,
+                'is_in_pdf'   => false,
+                'tic_attr'   => [
+                    'type'   =>['value' =>  null, 'same_as_db' =>null , 'value_db' =>  $db_ticket->ticket_type_code ??  null] ,
+                    'amount'   =>['amount'=> null, 'same_as_db' => null, 'amount_db'  =>  $db_ticket->cost_total_amount,] ,
+                ],
+
+            ];
+
+        }
+
+
+
 
         return $out;
     }
