@@ -25,6 +25,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class AirlineResource extends Resource
 {
@@ -39,11 +40,25 @@ class AirlineResource extends Resource
     protected static ?string $pluralModelLabel = "الشركات";
     protected static ?string $modelLabel = 'شركة';
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('airlines.view');
+    }
 
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('airlines.create');
+    }
 
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('airlines.update');
+    }
 
-
-
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('airlines.delete');
+    }
 
     public static function getNavigationLabel(): string
     {

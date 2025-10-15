@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Form as SchemaForm;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class CompanySettings extends Page
@@ -37,6 +38,15 @@ class CompanySettings extends Page
         return 100;
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('company_settings.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('company_settings.create');
+    }
 
     public function mount(): void
     {

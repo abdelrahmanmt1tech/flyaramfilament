@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TicketResource extends Resource
 {
@@ -37,6 +38,26 @@ class TicketResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.tickets');
+    }
+
+          public static function canViewAny(): bool
+    {
+        return Auth::user()->can('tickets.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('tickets.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('tickets.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('tickets.delete');
     }
 
     public static function form(Schema $schema): Schema

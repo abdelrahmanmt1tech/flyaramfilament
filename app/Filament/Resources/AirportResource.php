@@ -25,6 +25,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class AirportResource extends Resource
 {
@@ -39,7 +40,25 @@ class AirportResource extends Resource
     protected static ?string $modelLabel = 'مطار';
 
 
+   public static function canViewAny(): bool
+    {
+        return Auth::user()->can('airports.view');
+    }
 
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('airports.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('airports.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('airports.delete');
+    }
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::MapPin;
 

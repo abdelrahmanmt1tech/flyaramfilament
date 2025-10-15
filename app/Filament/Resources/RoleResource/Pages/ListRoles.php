@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Filament\Resources\RoleResource\Pages;
+
+use App\Filament\Resources\RoleResource;
+use App\Support\PermissionRegistry;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListRoles extends ListRecords
+{
+    protected static string $resource = RoleResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+
+    public function mount(): void
+    {
+        parent::mount();
+        // Sync permissions every time roles list is opened
+        PermissionRegistry::sync('web');
+    }
+}

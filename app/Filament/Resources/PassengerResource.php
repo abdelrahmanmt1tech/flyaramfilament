@@ -24,6 +24,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class PassengerResource extends Resource
 {
@@ -42,6 +43,26 @@ class PassengerResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.passengers');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('passengers.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('passengers.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('passengers.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('passengers.delete');
     }
 
     public static function form(Schema $schema): Schema

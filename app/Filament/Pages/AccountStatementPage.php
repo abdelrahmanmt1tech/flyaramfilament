@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\Summarizers\Summarizer;
+use Illuminate\Support\Facades\Auth;
 
 class AccountStatementPage extends Page implements HasTable
 {
@@ -61,6 +62,11 @@ class AccountStatementPage extends Page implements HasTable
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.account_statement');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('account_statement.view');
     }
 
      // إضافة Header Actions

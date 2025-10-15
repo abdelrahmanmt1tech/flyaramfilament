@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('ticket_id')->nullable(); // Ticket reference/ID
             $table->string('lpo_no')->nullable(); // LPO (Local Purchase Order) number
             $table->string('sector')->nullable();
-            $table->enum('type',['sale','refund'])->default('sale');
+            // $table->enum('type',['sale','refund'])->default('sale');
         
             // Financial fields
             $table->decimal('debit', 15, 2)->default(0);

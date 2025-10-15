@@ -29,6 +29,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class BranchResource extends Resource
 {
@@ -47,6 +48,26 @@ class BranchResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.branches');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('branches.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('branches.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('branches.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('branches.delete');
     }
 
     public static function form(Schema $schema): Schema

@@ -21,6 +21,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TicketSegmentResource extends Resource
 {
@@ -35,6 +36,25 @@ class TicketSegmentResource extends Resource
         return __('dashboard.sidebar.ticket_segments');
     }
 
+          public static function canViewAny(): bool
+    {
+        return Auth::user()->can('ticket_segments.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('ticket_segments.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('ticket_segments.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('ticket_segments.delete');
+    }
 
     public static function canAccess(): bool
     {

@@ -46,7 +46,7 @@ class StatsOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::ArrowLongUp),
 
 
-            Stat::make('عدد اتلموردين', $supplier)
+            Stat::make('عدد الموردين', $supplier)
                 ->description('عدد التذاكر  مرتبطه بفواتير')
                 ->descriptionIcon(Heroicon::ArrowLongUp),
 

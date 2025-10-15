@@ -29,6 +29,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -49,6 +50,25 @@ class UserResource extends Resource
         return 'المستخدمون';
     }
 
+      public static function canViewAny(): bool
+    {
+        return Auth::user()->can('users.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('users.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('users.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('users.delete');
+    }
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -63,6 +83,13 @@ class UserResource extends Resource
                             ->label('البريد الإلكتروني')
                             ->email()
                             ->required(),
+
+                        Select::make('roles')
+                            ->label('الدور')
+                            ->relationship('roles', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->native(false),
 
                         TextInput::make('password')
                             ->label('كلمة المرور')
@@ -108,6 +135,7 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name')->label('الاسم')->searchable()->sortable(),
                 TextColumn::make('email')->label('البريد الإلكتروني')->searchable(),
+                TextColumn::make('roles.name')->label('الدور')->listWithLineBreaks()->limitList(3),
                 TextColumn::make('iata_code')->label('IATA'),
                 TextColumn::make('branches.name')->label('الفروع')->listWithLineBreaks()->limitList(3),
                 TextColumn::make('franchises.name')->label('الفرانشايز')->listWithLineBreaks()->limitList(3),

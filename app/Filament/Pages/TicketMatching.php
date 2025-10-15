@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use UnitEnum;
 
@@ -63,6 +64,16 @@ class TicketMatching extends Page
 
 
     public array $MatchResults = [];
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('ticket_matching.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('ticket_matching.create');
+    }
 
 
     public function mount(): void

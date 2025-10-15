@@ -33,6 +33,8 @@ return [
         'account_statement' => 'Account Statement',
         'free_invoices' => 'Free Invoices',
         'reservations' => 'Reservations',
+        'roles' => 'Roles',
+
 
     ],
 
@@ -190,7 +192,10 @@ return [
         'created_at'         => 'Created At',
         'updated_at'         => 'Updated At',
         'account_statement' => 'Account Statement',
+        // Role specific fields
+        'role' => 'Role',
+        'role_name' => 'Role Name',
+        'permissions' => 'Permissions',
+        'select_permissions' => 'Select permissions assigned to this role',
     ],
-
-
 ];

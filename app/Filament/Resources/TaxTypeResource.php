@@ -23,6 +23,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TaxTypeResource extends Resource
 {
@@ -41,6 +42,26 @@ class TaxTypeResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.tax_types');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('tax_types.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('tax_types.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('tax_types.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('tax_types.delete');
     }
 
     public static function form(Schema $schema): Schema

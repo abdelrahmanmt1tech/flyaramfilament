@@ -34,6 +34,8 @@ return [
         'free_invoices' => 'الفواتير الحرة',
         'reservations' => 'الحجوزات',
         'ticket-matching' => 'مطابقه التذاكر',
+       'roles' => 'الأدوار والصلاحيات',
+
     ],
 
     'upload_ticket' => [
@@ -197,7 +199,11 @@ return [
         'created_at'         => 'تاريخ الإنشاء',
         'updated_at'         => 'تاريخ التعديل',
         'account_statement' => 'كشف الحساب',
-
+        // Role specific fields
+        'role' => 'الدور',
+        'role_name' => 'اسم الدور',
+        'permissions' => 'الصلاحيات',
+        'select_permissions' => 'اختر الصلاحيات المخصصة لهذا الدور',
     ],
 
 

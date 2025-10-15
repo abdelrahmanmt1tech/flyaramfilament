@@ -22,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Summarizers\Sum;
+use Illuminate\Support\Facades\Auth;
 
 class TicketSalesReport extends Page implements HasTable
 {
@@ -51,6 +52,11 @@ class TicketSalesReport extends Page implements HasTable
     public static function canAccess(): bool
     {
         return true;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('ticket_sales_report.view');
     }
     
     public function table(Table $table): Table

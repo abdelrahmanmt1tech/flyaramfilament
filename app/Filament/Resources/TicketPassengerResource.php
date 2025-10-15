@@ -23,7 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-
+use Illuminate\Support\Facades\Auth;    
 class TicketPassengerResource extends Resource
 {
     protected static ?string $model = TicketPassenger::class;
@@ -41,6 +41,27 @@ class TicketPassengerResource extends Resource
     {
         return __('dashboard.sidebar.ticket_passengers');
     }
+
+    
+    //    public static function canViewAny(): bool
+    // {
+    //     return Auth::user()->can('ticket_passengers.view');
+    // }
+
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::user()->can('ticket_passengers.create');
+    // }
+
+    // public static function canEdit($record): bool
+    // {
+    //     return Auth::user()->can('ticket_passengers.update');
+    // }
+
+    // public static function canDelete($record): bool
+    // {
+    //     return Auth::user()->can('ticket_passengers.delete');
+    // }
 
     public static function canAccess(): bool
     {

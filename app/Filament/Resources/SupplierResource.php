@@ -28,6 +28,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierResource extends Resource
 {
@@ -46,6 +47,26 @@ class SupplierResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.suppliers');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('suppliers.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('suppliers.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('suppliers.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('suppliers.delete');
     }
 
     public static function form(Schema $schema): Schema

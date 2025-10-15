@@ -24,6 +24,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class LeadSourceResource extends Resource
 {
@@ -42,6 +43,26 @@ class LeadSourceResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.lead_sources');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('lead_sources.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('lead_sources.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('lead_sources.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('lead_sources.delete');
     }
 
     public static function form(Schema $schema): Schema

@@ -5,6 +5,9 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use App\Support\PermissionRegistry;
 
 class UserSeeder extends Seeder
 {
@@ -13,10 +16,25 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::updateOrCreate(
+        // Create or get the super admin role
+        $superAdminRole = Role::firstOrCreate([
+            'name' => 'مدير عام',
+            'guard_name' => 'web'
+        ]);
+
+        // Sync all permissions first
+        PermissionRegistry::sync();
+
+        // Get all permissions
+        $allPermissions = Permission::all();
+
+        // Give all permissions to super admin role
+        $superAdminRole->syncPermissions($allPermissions);
+
+        // Create admin user
+        $adminUser = User::updateOrCreate(
             ['email' => 'admin@admin.com'],
             [
-                // 'code' => 'ADM001',
                 'name' => 'المدير العام',
                 'email' => 'admin@admin.com',
                 'password' => Hash::make('123456'),
@@ -24,15 +42,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
-            ['email' => 'manager@admin.com'],
-            [
-                // 'code' => 'MGR001',
-                'name' => 'مدير المبيعات',
-                'email' => 'manager@admin.com',
-                'password' => Hash::make('123456'),
-                'iata_code' => 'IATA002',
-            ]
-        );
+        // Assign super admin role to admin user
+        $adminUser->assignRole($superAdminRole);
     }
 }

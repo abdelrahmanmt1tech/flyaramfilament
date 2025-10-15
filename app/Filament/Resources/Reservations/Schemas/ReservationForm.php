@@ -54,7 +54,7 @@ class ReservationForm
                 // المسافر على مستوى الحجز
                 Select::make('passenger_id')
                     ->label('المسافر')
-                    ->options(Passenger::pluck('first_name', 'id')->toArray())
+                    ->options(Passenger::pluck('first_name', 'id')->filter()->toArray())
                     ->searchable()
                     ->native(false),
             ])
@@ -93,10 +93,10 @@ class ReservationForm
                         }
 
                         return match ($type) {
-                            Client::class => Client::pluck('name', 'id')->toArray(),
+                            Client::class => Client::pluck('name', 'id')->filter()->toArray(),
                             // Supplier::class => Supplier::pluck('name', 'id')->toArray(),
-                            Branch::class => Branch::pluck('name', 'id')->toArray(),
-                            Franchise::class => Franchise::pluck('name', 'id')->toArray(),
+                            Branch::class => Branch::pluck('name', 'id')->filter()->toArray(),
+                            Franchise::class => Franchise::pluck('name', 'id')->filter()->toArray(),
                             default => [],
                         };
                     })

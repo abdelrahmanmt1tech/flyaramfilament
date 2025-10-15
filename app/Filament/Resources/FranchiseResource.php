@@ -28,6 +28,7 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class FranchiseResource extends Resource
 {
@@ -46,6 +47,26 @@ class FranchiseResource extends Resource
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.franchises');
+    }
+
+       public static function canViewAny(): bool
+    {
+        return Auth::user()->can('franchises.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('franchises.create');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return Auth::user()->can('franchises.update');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return Auth::user()->can('franchises.delete');
     }
 
     public static function form(Schema $schema): Schema
