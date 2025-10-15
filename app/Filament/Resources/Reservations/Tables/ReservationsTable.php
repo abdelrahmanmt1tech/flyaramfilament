@@ -231,7 +231,7 @@ class ReservationsTable
                             'credit'=> $record->accountStatement->first()->debit,
                             'reservation_id'=> $record->id,
                             'type' => 'refund',
-                                        
+
                         ]);
 
                         Notification::make()
@@ -258,7 +258,7 @@ class ReservationsTable
                             }
 
                             $reservationsData = [];
-                            
+
                             foreach ($records as $index => $reservation) {
                                 // Skip if already has invoice
                                 if (Invoice::where('reservation_id', $reservation->id)->exists()) {
@@ -266,7 +266,7 @@ class ReservationsTable
                                 }
 
                                 $sum = (float) $reservation->items()->sum('total_amount');
-                                
+
                                 // Skip if total is 0
                                 if ($sum <= 0) {
                                     continue;
@@ -300,7 +300,7 @@ class ReservationsTable
                                                     ->disabled()
                                                     ->dehydrated(),
                                             ]),
-                                        
+
                                         TextInput::make("reservations.{$index}.notes")
                                             ->label('ملاحظات')
                                             ->placeholder('ملاحظات الفاتورة (اختياري)')

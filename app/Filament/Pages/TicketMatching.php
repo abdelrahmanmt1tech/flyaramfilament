@@ -2,46 +2,38 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\AccountStatement;
-use App\Models\Airline;
-use App\Models\Airport;
-use App\Models\AirportRoute;
-use App\Models\Branch;
-use App\Models\Currency;
-use App\Models\Passenger;
-use App\Models\Supplier;
-use App\Models\Ticket;
-use App\Models\User;
-use App\Services\BspTicketMapper;
-use App\Services\TabulaExtractor;
-use App\Services\Tickets\TicketParser;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ColumnGroup;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
-use Spatie\PdfToText\Pdf;
 use UnitEnum;
 
-
-
-
-
-
-
 class TicketMatching extends Page
+    implements HasTable, HasForms
 {
+    use InteractsWithTable;
+    use InteractsWithForms;
+
+
     protected string $view = 'filament.pages.ticket-matching';
 
 
-
-
-    protected static string | UnitEnum | null $navigationGroup = "رفع وتضمين";
+    protected static string|UnitEnum|null $navigationGroup = "رفع وتضمين";
     public $defaultAction = 'onboarding';
 
     public function getTitle(): string
@@ -70,12 +62,79 @@ class TicketMatching extends Page
     public $text_file;
 
 
+    public array $MatchResults = [];
+
+
     public function mount(): void
     {
         // $this->form->fill($this->getRecord()?->attributesToArray());
         $this->text_file = null;
         $this->form->fill(['text_file' => null]);
+        $this->MatchResults = session()->get('MatchResults', []) ?? [];
     }
+
+
+    public function getRecords(): array
+    {
+        // تحويل الأكواد إلى صفوف جدول
+        return collect($this->MatchResults)
+            ->toArray();
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+
+
+
+                TextColumn::make('tic_number')->label("رقم التذكره"),
+                IconColumn::make('is_in_db')->label("في النظام")->boolean(),
+                IconColumn::make('is_in_pdf')->label("في الPDF")->boolean(),
+
+
+                ColumnGroup::make('type', [
+                    TextColumn::make('tic_attr.type.value')->label("value")
+                        ->icon(Heroicon::OutlinedFolderMinus),
+                    IconColumn::make('tic_attr.type.same_as_db')->label("same as db")->boolean(),
+                    TextColumn::make('tic_attr.type.value_db')->label("value db")->icon(Heroicon::Server),
+                ])    ->alignCenter()->wrapHeader(),
+
+
+
+
+                ColumnGroup::make('amount', [
+                    TextColumn::make('tic_attr.amount.amount')->label("amount")
+                        ->icon(Heroicon::OutlinedCurrencyDollar),
+                    IconColumn::make('tic_attr.amount.same_as_db')->label("same as db")->boolean(),
+                    TextColumn::make('tic_attr.amount.amount_db')->label("amount db")->icon(Heroicon::Server),
+                ])    ->alignCenter()->wrapHeader(),
+
+
+                ColumnGroup::make('taxes', [
+                    TextColumn::make('tic_attr.total_taxes.value')->label("value")
+                        ->icon(Heroicon::Tag),
+                    IconColumn::make('tic_attr.total_taxes.same_as_db')->label("same as db")->boolean(),
+                    TextColumn::make('tic_attr.total_taxes.value_db')->label("value db")->icon(Heroicon::Server),
+                ])    ->alignCenter()->wrapHeader(),
+
+                ColumnGroup::make('date', [
+                    TextColumn::make('tic_attr.issue_date.value')->label("value")
+                        ->icon(Heroicon::Calculator),
+                    IconColumn::make('tic_attr.issue_date.same_as_db')->label("same as db")->boolean(),
+                    TextColumn::make('tic_attr.issue_date.value_db')->label("value db")->icon(Heroicon::Server),
+                ])    ->alignCenter()->wrapHeader(),
+
+            ])
+
+
+
+
+            ->recordActions([
+            ])
+            ->records(fn() => $this->getRecords());
+    }
+
 
     public function form(Schema $schema): Schema
     {
@@ -83,8 +142,10 @@ class TicketMatching extends Page
             ->components([
                 Form::make([
 
-                    DatePicker::make('start_date') ->label('من تاريخ') ->required(),
-                    DatePicker::make('end_date') ->label('الى تاريخ') ->required(),
+       Grid::make()->schema([
+           DatePicker::make('start_date')->label('من تاريخ')->required(),
+           DatePicker::make('end_date')->label('الى تاريخ')->required(),
+       ])->columnSpan(1)->columns(1),
                     FileUpload::make('pdf_file')
                         ->label("يجب رفع ملف PDF")
                         ->required()
@@ -93,7 +154,7 @@ class TicketMatching extends Page
                         ->directory('pdf_files')
                         ->disk('public')
 
-                ])
+                ])->columns(2)
                     ->livewireSubmitHandler('save')
                     ->footer([
                         Actions::make([
@@ -104,18 +165,15 @@ class TicketMatching extends Page
                         ]),
                     ]),
             ])
-//            ->record($this->getRecord())
+            ->record($this->getRecords())
             ->statePath('data');
     }
-
-
-
 
 
     public function save(): void
     {
         $data = $this->form->getState();
-        config()->set("app.debug" , true);
+        config()->set("app.debug", true);
 
 
         if (
@@ -128,12 +186,9 @@ class TicketMatching extends Page
                 ->danger()
                 ->title("بيانات غير مكتمله")
                 ->body('فضلاً ارفع ملف PDF وحدد فترة التاريخ.')
-
                 ->send();
             return;
         }
-
-
 
 
         // مسار نسبي مثل: 'pdf_files/abc.pdf'
@@ -142,7 +197,7 @@ class TicketMatching extends Page
         // تأكد أنك على نفس الـ disk المعرّف في FileUpload
         $disk = Storage::disk('public');
 
-        if (! $disk->exists($relativePath)) {
+        if (!$disk->exists($relativePath)) {
             Notification::make()
                 ->danger()
                 ->title('ملف غير موجود')
@@ -156,65 +211,31 @@ class TicketMatching extends Page
 
         try {
 
-            $pages = implode(',', [
-                2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,
-                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,
-                57,58,59,60,61,62,63,69,70,73,74
-            ]);
+            $start_date = $data['start_date'];
+            $end_date = $data['end_date'];
+
 
             $absPath = $disk->path($relativePath);
 
-            $result = \App\Services\BspReportProcessor::process($absPath);
-
-            dd($result);
-
-// lattice + guess + صفحات TKTT
-            $tables  = \App\Services\TabulaExtractor::extractTablesRobust($absPath);
-            $rows    = \App\Services\TabulaExtractor::tablesToRows($tables);
-dd($rows[0]);
-            $tickets = \App\Services\BspTicketMapper::mapRowsToTickets($rows);
+            $result = \App\Services\BspReportProcessor::process($absPath, $start_date, $end_date);
 
 
-                // 4) طابق/حدّث نظامك
-                $matched = 0; $unmatched = 0;
-                foreach ($tickets as $r) {
-                    $full = ($r['airline'] ?? '') . ($r['ticket_no'] ?? '');
-
-                    if (! $full) { $unmatched++; continue; }
-
-                    $match = \App\Models\Ticket::query()
-                        ->where('full_ticket_no', $full)
-                        ->when($r['issue_date'], fn($q) => $q->whereDate('issue_date', $r['issue_date']))
-                        ->first();
-
-                    if ($match) {
-                        $match->update([
-                            'fare'          => $r['fare'],
-                            'transaction'   => $r['txn'],
-                            'stat'          => $r['stat'],
-                            'std_comm'      => $r['std_comm'],
-                            'tax_on_comm'   => $r['tax_on_comm'],
-                            'tax_yq'        => $r['taxes']['YQ'] ?? null,
-                            'tax_yr'        => $r['taxes']['YR'] ?? null,
-                            'tax_total'     => $r['taxes']['total'] ?? null,
-                            'fop'           => $r['fop'],
-                        ]);
-                        $matched++;
-                    } else {
-                        \App\Models\UnmatchedBspRow::create(array_merge($r, [
-                            'full_ticket_no' => $full,
-                            'source_pdf'     => $relativePath,
-                        ]));
-                        $unmatched++;
-                    }
-                }
-
-                Notification::make()->success()
-                    ->title('تم استخراج ومطابقة التذاكر')
-                    ->body("Matched: {$matched} — Unmatched: {$unmatched}")
-                    ->send();
+            //   Storage::put('example.txt', json_encode($result, JSON_PRETTY_PRINT));
 
 
+            session()->put('MatchResults', $result['comparison']);
+            $this->MatchResults = $result['comparison'];
+
+
+            // 4) طابق/حدّث نظامك
+            $matched = 0;
+            $unmatched = 0;
+
+
+            Notification::make()->success()
+                ->title('تم استخراج ومطابقة التذاكر')
+                ->body("Matched: {$matched} — Unmatched: {$unmatched}")
+                ->send();
 
 
 //            $text = Pdf::getText($absPath);
@@ -234,15 +255,7 @@ dd($rows[0]);
         }
 
 
-
-
-
-
-
     }
-
-
-
 
 
 }

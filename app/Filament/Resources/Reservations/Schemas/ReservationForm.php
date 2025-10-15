@@ -104,7 +104,10 @@ class ReservationForm
                     ->native(false)
                     ->placeholder('اختر الجهة أولاً من نوع الجهة')
                     ->required()
-                    ->disabled(fn(callable $get) => !$get('related_type')),
+//                    ->disabled(fn(callable $get) => !$get('related_type'))
+
+
+                ,
 
             ])
                 ->columnSpanFull()
@@ -172,7 +175,8 @@ class ReservationForm
                                 ->label('نوع الخدمة')
                                 ->required()
                                 ->live() // جعل الحقل live للتفاعل
-                                ->disabled(fn(callable $get) => $get('reservation_type') !== 'other') // تفعيل الحقل بس لو other
+//                                ->disabled(fn(callable $get) => $get('reservation_type') !== 'other')
+                                // تفعيل الحقل بس لو other
                                 ->default(function (callable $get) use ($reservationTypes) {
                                     $type = $get('reservation_type');
                                     return ($type && $type !== 'other') ? ($reservationTypes[$type] ?? $type) : null;
