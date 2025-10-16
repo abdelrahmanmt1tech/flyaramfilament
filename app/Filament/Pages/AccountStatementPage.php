@@ -64,7 +64,7 @@ class AccountStatementPage extends Page implements HasTable
         return __('dashboard.sidebar.account_statement');
     }
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return Auth::user()->can('account_statement.view');
     }
@@ -246,6 +246,11 @@ class AccountStatementPage extends Page implements HasTable
                     ->label('التاريخ')
                     ->date()
                     ->sortable(),
+
+                TextColumn::make('reservation_number/pnr')
+                    ->label('رقم الحجز/Pnr')
+                    ->getStateUsing(fn($record) => $record->reservation?->reservation_number ?? $record->ticket?->pnr)
+                    ->searchable(),
 
                 TextColumn::make('doc_no')
                     ->label('رقم المستند')

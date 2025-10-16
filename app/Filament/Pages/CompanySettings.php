@@ -38,15 +38,12 @@ class CompanySettings extends Page
         return 100;
     }
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return Auth::user()->can('company_settings.view');
     }
 
-    public static function canCreate(): bool
-    {
-        return Auth::user()->can('company_settings.create');
-    }
+
 
     public function mount(): void
     {

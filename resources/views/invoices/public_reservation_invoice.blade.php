@@ -115,10 +115,10 @@
 <body>
     <button class="print-button" onclick="window.print()">🖨️ طباعة</button>
     <div class="container">
-        {{-- <div class="qr-code">
+        <div class="qr-code">
             {!! $qrCode !!}
             <div style="text-align: center; font-size: 10px; margin-top: 5px;">Scan to verify</div>
-        </div> --}}
+        </div>
         <div class="header">
             <img src="{{ asset('logo.png') }}" alt="Logo" class="logo" width="100">
         </div>

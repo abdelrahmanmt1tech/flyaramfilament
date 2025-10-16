@@ -145,7 +145,7 @@ class TicketsTable
 
                 // ======== باقي الحقول (togglable) ========
 
-                TextColumn::make('pnr') ->prefix("pnr")
+                TextColumn::make('pnr')->prefix("pnr")
                     ->label(__('dashboard.fields.pnr'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable()
@@ -210,24 +210,108 @@ class TicketsTable
             ])
             ->recordActions([
                 Action::make('viewInvoice')
-                    ->label('عرض الفاتورة')
+                    ->label('الفاتورة')
                     ->icon('heroicon-o-document-text')
                     ->color('success')
                     ->visible(fn($record) => $record->invoices()->exists())
-                    ->url(fn($record) => route('invoices.print', $record->invoices()->first()->id))
-                    ->openUrlInNewTab(),
+                ->url(fn($record) => route('invoices.print', $record->invoices()->first()->slug))
+                ->openUrlInNewTab(),
 
-                
+
                 // عرض فاتورة الاسترجاع
                 Action::make('showRefundInvoice')
-                    ->label('عرض فاتورة الاسترجاع')
+                    ->label('فاتورة الاسترجاع')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('warning')
                     ->visible(fn($record) => $record->invoices()->where('type', 'refund')->exists())
-                    ->url(fn($record) => route('invoices.print', $record->invoices()->where('type', 'refund')->first()->id))
+                    ->url(fn($record) => route('invoices.print', $record->invoices()->where('type', 'refund')->first()->slug))
                     ->openUrlInNewTab(),
 
                 ViewAction::make(),
+                // -----------------------------------------
+                Action::make('editProfitAndDiscount')
+                    ->label('تعديل الربح')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('info')
+                    ->modalHeading('تعديل الربح والخصم للتذكرة')
+                    ->schema([
+                        // تعديل الربح
+                        TextInput::make('profit_amount')
+                            ->label('تعديل الربح')
+                            ->default(fn($record) => $record->profit_amount)
+                            ->numeric()
+                            ->minValue(0)
+                            ->suffix('SAR')
+                            ->reactive(),
+
+                        // نوع الضريبة
+                        Select::make('tax_type_id')
+                            ->label('نوع الضريبة')
+                            ->visible(fn($record) => !$record->is_domestic_flight)
+                            ->default(fn($record) => $record->tax_type_id)
+                            ->options(
+                                TaxType::whereNotIn('id', [1, 2])->get()->mapWithKeys(function ($tax) {
+                                    return [$tax->id => $tax->name . ' (' . $tax->value . '%)'];
+                                })
+                            )
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                if ($state && $get('profit_amount')) {
+                                    $tax = TaxType::find($state);
+                                    if ($tax) {
+                                        $profit = $get('profit_amount');
+                                        $extraTax = ($profit * $tax->value) / 100;
+                                        $set('extra_tax_amount', $extraTax);
+                                    }
+                                }
+                            }),
+
+                        // قيمة الضريبة من الأرباح (تُحسب تلقائيًا)
+                        TextInput::make('extra_tax_amount')
+                            ->label('قيمة الضريبة من الأرباح')
+                            ->default(fn($record) => $record->extra_tax_amount)
+                            ->numeric()
+                            ->suffix('SAR')
+                            ->disabled()
+                            ->reactive(),
+
+                        // تعديل الخصم
+                        TextInput::make('discount_amount')
+                            ->label('تعديل الخصم')
+                            ->default(fn($record) => $record->discount_amount)
+                            ->numeric()
+                            ->minValue(0)
+                            ->suffix('SAR')
+                            ->nullable(),
+                    ])
+                    ->action(function ($record, array $data) {
+                        if (!empty($data['discount_amount'])) {
+                            $record->discount_amount = $data['discount_amount'];
+                        }
+
+                        if (!empty($data['profit_amount'])) {
+                            $record->profit_amount = $data['profit_amount'];
+                        }
+
+                        // تطبيق الضريبة فقط إذا لم تكن التذكرة داخلية
+                        if (!$record->is_domestic_flight && !empty($data['tax_type_id'])) {
+                            $tax = TaxType::find($data['tax_type_id']);
+                            $record->tax_type_id = $tax->id;
+
+                            if (!empty($data['profit_amount']) && $tax) {
+                                $record->extra_tax_amount = ($data['profit_amount'] * $tax->value) / 100;
+                            }
+                        }
+
+                        $record->save();
+
+                        Notification::make()
+                            ->title('تم تعديل الربح والخصم بنجاح')
+                            ->success()
+                            ->send();
+                    }),
+
+                // -----------------------------------------
                 EditAction::make(),
             ])
             ->toolbarActions([
@@ -383,8 +467,9 @@ class TicketsTable
                             // Tax Type select
                             Select::make('tax_type_id')
                                 ->label('نوع الضريبة')
+                                ->helperText('لن يتم تطبيق هذه الضريبة على التذاكر الداخلية')
                                 ->options(
-                                    TaxType::all()->mapWithKeys(function ($tax) {
+                                    TaxType::whereNotIn('id', [1, 2])->get()->mapWithKeys(function ($tax) {
                                         return [$tax->id => $tax->name . ' (' . $tax->value . '%)'];
                                     })
                                 )
@@ -420,6 +505,7 @@ class TicketsTable
                         ])
                         ->action(function ($records, array $data) {
                             foreach ($records as $record) {
+
                                 if (!empty($data['discount_amount'])) {
                                     $record->discount_amount = $data['discount_amount'];
                                 }
@@ -428,7 +514,7 @@ class TicketsTable
                                     $record->profit_amount = $data['profit_amount'];
                                 }
 
-                                if (!empty($data['tax_type_id'])) {
+                                if (!$record->is_domestic_flight && !empty($data['tax_type_id'])) {
                                     $tax = TaxType::find($data['tax_type_id']);
                                     $record->tax_type_id = $tax->id;
 
@@ -731,15 +817,15 @@ class TicketsTable
                                     $refundInvoice->tickets()->attach($ticket->id);
 
                                     // تحديث حالة التذكرة
-                                    $ticket->update(['is_refunded' => 1 , 'ticket_type' =>'ملغاة / مسترجعة']); //النوع حدثته زي ما هو في الداتا بيز 
+                                    $ticket->update(['is_refunded' => 1, 'ticket_type' => 'ملغاة / مسترجعة']); //النوع حدثته زي ما هو في الداتا بيز 
 
-                                        AccountStatement::logTicket(
-                                            $ticket,
-                                            $ticket->accountStatement->first()->statementable_type,
-                                            $ticket->accountStatement->first()->statementable_id,
-                                            $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
-                                            'refund'
-                                        );
+                                    AccountStatement::logTicket(
+                                        $ticket,
+                                        $ticket->accountStatement->first()->statementable_type,
+                                        $ticket->accountStatement->first()->statementable_id,
+                                        $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
+                                        'refund'
+                                    );
                                 }
 
 

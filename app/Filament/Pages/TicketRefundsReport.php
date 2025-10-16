@@ -48,12 +48,12 @@ class TicketRefundsReport extends Page implements HasTable
         return 'تقارير مرتجعات التذاكر';
     }
 
-    public static function canAccess(): bool
-    {
-        return true;
-    }
+    // public static function canAccess(): bool
+    // {
+    //     return true;
+    // }
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return Auth::user()->can('ticket_refunds_report.view');
     }

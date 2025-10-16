@@ -166,33 +166,44 @@ class Ticket extends Model
 
     public function createAccountTax()
     {
+        if ($this->is_domestic_flight) {
+      
+            $internal_tax_percentage = TaxType::where('id', 1)->value('value') ?? 15;
 
-        if ($this->tax_type_id && $this->tax_type_id !== 1) {
+            $internal_tax_value = $this->cost_total_amount * ($internal_tax_percentage / 100); 
+
             AccountTax::updateOrCreate(
+                ['ticket_id' => $this->id, 'type' => 'purchase_tax'],
+                [
+                    'tax_percentage' => $internal_tax_percentage,
+                    'tax_value'      => $internal_tax_value,
+                    'tax_types_id'    => 1,
+                    'is_returned'    => false,
+                ]
+            );
+
+           $sale_tax_percentage = TaxType::where('id', 2)->value('value') ?? 15;
+
+            $sale_tax_value = max($this->sale_total_amount, $this->cost_total_amount)
+            * ($sale_tax_percentage / 100); 
+
+
+            AccountTax::updateOrCreate(
+                ['ticket_id' => $this->id, 'type' => 'sales_tax'],
+                [
+                    'tax_percentage' => $sale_tax_percentage,
+                    'tax_value'      => $sale_tax_value,
+                    'tax_types_id'    => 2,
+                    'is_returned'    => false,
+                ]
+            );
+        }else{
+              AccountTax::updateOrCreate(
                 ['ticket_id' => $this->id, 'type' => 'sales_tax'],
                 [
                     'tax_percentage' => $this->taxType()->value('value') ?? 0,
                     'tax_value'      => $this->extra_tax_amount ?? 0,
                     'tax_types_id'   => $this->tax_type_id,
-                    'is_returned'    => false,
-                ]
-            );
-        }
-
-
-
-
-        if ($this->is_domestic_flight) {
-            $percentage = TaxType::where('id', 1)->value('value') ?? 15;
-            $value = max($this->sale_total_amount, $this->cost_total_amount)
-            * ($percentage / (100 + $percentage)); // todo: check this
-
-            AccountTax::updateOrCreate(
-                ['ticket_id' => $this->id, 'type' => 'purchase_tax'],
-                [
-                    'tax_percentage' => $percentage,
-                    'tax_value'      => $value,
-                    'tax_types_id'    => 1,
                     'is_returned'    => false,
                 ]
             );

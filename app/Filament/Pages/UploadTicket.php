@@ -70,15 +70,15 @@ class UploadTicket extends Page
         return 69;
     }
 
-    public static function canViewAny(): bool
-    {
-        return Auth::user()->can('upload_ticket.view');
-    }
+    // public static function canAccess(): bool
+    // {
+    //     return Auth::user()->can('upload_ticket.view');
+    // }
 
-    public static function canCreate(): bool
-    {
-        return Auth::user()->can('upload_ticket.create');
-    }
+    // public static function canCreate(): bool
+    // {
+    //     return Auth::user()->can('upload_ticket.create');
+    // }
 
     public function mount(): void
     {

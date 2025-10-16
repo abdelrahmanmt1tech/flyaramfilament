@@ -14,10 +14,12 @@ class TaxTypeSeeder extends Seeder
     {
         TaxType::updateOrCreate(
             ['id' => 1], 
-            [
-                'name'  => 'ضريبة داخلية',
-                'value' => 15,
-            ]
+            ['name' => 'ضريبة داخلية', 'value' => 15],
+            
+        );
+        TaxType::updateOrCreate(
+            ['id' => 2], 
+            ['name' => 'ضريبة مبيعات', 'value' => 15]
         );
     }
 }

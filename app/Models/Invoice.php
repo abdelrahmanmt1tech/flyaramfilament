@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
@@ -18,7 +19,11 @@ class Invoice extends Model
         'invoiceable_type',
         'invoiceable_id',
         'reference_num',
-        'reservation_id'
+        'reservation_id',
+        'slug', 
+        'access_token', 
+
+
     ];
 
     protected $casts = [
@@ -27,6 +32,20 @@ class Invoice extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+        protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($invoice) {
+            if (empty($invoice->slug)) {
+                $invoice->slug = Str::slug($invoice->invoice_number . '-' . Str::random(6));
+            }
+            if (empty($invoice->access_token)) {
+                $invoice->access_token = Str::random(32);
+            }
+        });
+    }
 
     public function invoiceable()
     {
@@ -54,4 +73,11 @@ class Invoice extends Model
     {
         return $this->belongsTo(Reservation::class);
     }
+
+    public function getSecureUrlAttribute()
+    {
+        return route('invoices.publicView', [$this->slug, $this->access_token]);
+    }
+
+
 }

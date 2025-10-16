@@ -49,12 +49,12 @@ class TicketSalesReport extends Page implements HasTable
         return 'تقارير مبيعات التذاكر';
     }
 
-    public static function canAccess(): bool
-    {
-        return true;
-    }
+    // public static function canAccess(): bool
+    // {
+    //     return true;
+    // }
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return Auth::user()->can('ticket_sales_report.view');
     }

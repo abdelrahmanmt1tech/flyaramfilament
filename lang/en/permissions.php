@@ -125,4 +125,10 @@ return [
     // Ticket Matching Management
     'ticket_matching.view' => 'View Ticket Matching',
     'ticket_matching.create' => 'Create Ticket Matching',
+
+    'company_settings.view' => 'View Company Settings',
+    'company_settings.create' => 'Create Company Settings',
+
+    'ticket_sales_report.view' => 'View Ticket Sales Report',
+    'ticket_refunds_report.view' => 'View Ticket Refunds Report',
 ];

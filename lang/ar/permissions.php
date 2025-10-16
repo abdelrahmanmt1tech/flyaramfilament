@@ -125,4 +125,10 @@ return [
     // Ticket Matching Management
     'ticket_matching.view' => 'عرض مطابقة التذاكر',
     'ticket_matching.create' => 'إنشاء مطابقة تذاكر',
+
+    'company_settings.view' => 'عرض إعدادات الشركة',
+    'company_settings.create' => 'إنشاء إعدادات الشركة',
+
+    'ticket_sales_report.view' => 'عرض تقرير مبيعات التذاكر',
+    'ticket_refunds_report.view' => 'عرض تقرير استرداد التذاكر',
 ];

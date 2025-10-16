@@ -65,15 +65,11 @@ class TicketMatching extends Page
 
     public array $MatchResults = [];
 
-    public static function canViewAny(): bool
+    public static function canAccess(): bool
     {
         return Auth::user()->can('ticket_matching.view');
     }
 
-    public static function canCreate(): bool
-    {
-        return Auth::user()->can('ticket_matching.create');
-    }
 
 
     public function mount(): void
