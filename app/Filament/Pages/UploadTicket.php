@@ -360,7 +360,7 @@ TRUNCATE `ticket_taxes`;
                 AccountStatement::logTicket($ticket, Branch::class, $branch_id);
             }
             if ($ticket->supplier_id) {
-                AccountStatement::logTicket($ticket, Supplier::class,$ticket->supplier_id , true);
+                AccountStatement::logTicket($ticket, Supplier::class,$ticket->supplier_id , true , 'purchase');
             }
 
             // passengers

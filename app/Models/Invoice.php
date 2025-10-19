@@ -59,8 +59,7 @@ class Invoice extends Model
 
     public function refundInvoices()
     {
-        return $this->hasMany(Invoice::class, 'reference_num', 'invoice_number')
-            ->where('type', 'refund');
+        return $this->where('type', 'refund');
     }
 
     public function originalInvoice()

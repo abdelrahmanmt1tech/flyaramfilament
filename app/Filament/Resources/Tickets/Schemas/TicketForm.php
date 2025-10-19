@@ -18,6 +18,19 @@ class TicketForm
         return $schema->components([
 
             Section::make(__('dashboard.fields.ticket_data'))->schema([
+                Select::make('ticket_type_code')
+                        ->label(__('dashboard.fields.ticket_type_code'))
+                        ->options([
+                            'VOID'    => 'تذكرة مسترجعة (VOID)',
+                            'REI'    => 'تذكرة معاد إصدارها (REI)',
+                            'TKT'    => 'تذكرة مؤكدة (TKT)',
+                            'EMD'    => 'خدمة إلكترونية (EMD)',
+                            'SPDR'    => 'تقرير مبيعات (SPDR)',
+                            'AIR-BLK'    => 'حجز جماعي (AIR-BLK)',
+                            'AMD'    => 'تذكرة دعم (AMD)',
+                            'RQ'    => 'حجز غير مؤكد (RQ)',
+                        ])
+                        ->searchable(),
                 TextInput::make('gds')->label(__('dashboard.fields.gds')),
                 TextInput::make('airline_name')->label(__('dashboard.fields.airline_name')),
                 TextInput::make('validating_carrier_code')->maxLength(2)->label(__('dashboard.fields.validating_carrier_code')),

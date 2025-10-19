@@ -27,6 +27,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -240,7 +241,7 @@ class AccountStatementPage extends Page implements HasTable
     public static function table(Table $table): Table
     {
         return $table
-            ->query(AccountStatement::query())
+            ->query(AccountStatement::latest())
             ->columns([
                 TextColumn::make('date')
                     ->label('التاريخ')
@@ -265,7 +266,8 @@ class AccountStatementPage extends Page implements HasTable
                     ->getStateUsing(fn($record) => $record->passengers->pluck('first_name')->implode(', ')),
 
                 TextColumn::make('sector')
-                    ->label('القطاع'),
+                    ->label('القطاع')
+                    ->getStateUsing(fn($record) => $record->ticket?->itinerary_string),
 
                 TextColumn::make('debit')
                     ->label('مدين')
@@ -347,7 +349,7 @@ class AccountStatementPage extends Page implements HasTable
                         if ($record->reservation_id) {
                             return 'فاتورة حجز';
                         }
-                        if ($record->originalInvoices()->exists() || $record->refundInvoices()->exists()) {
+                        if ($record->saleInvoice()->exists() || $record->refundInvoice()->exists()) {
                             return 'فاتورة تذكرة';
                         }
                         return '-';
@@ -535,9 +537,9 @@ class AccountStatementPage extends Page implements HasTable
                     })
             ])
             ->recordActions([
-                // عرض الفاتورة الأصلية
+                // عرض فاتورة البيع
                 Action::make('showInvoice')
-                    ->label('عرض الفاتورة')
+                    ->label(' فاتورة البيع')
                     ->icon('heroicon-o-eye')
                     ->color('success')
                     ->visible(function ($record) {
@@ -547,9 +549,8 @@ class AccountStatementPage extends Page implements HasTable
                                 ->where('type', '!=', 'refund')
                                 ->exists();
                         }
-                        return $record->originalInvoices()->exists();
-                    
-                    }
+                        return $record->saleInvoice()->exists();
+                        }
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
@@ -558,13 +559,37 @@ class AccountStatementPage extends Page implements HasTable
                                 ->value('id');
                             return route('reservations.invoices.print', $id);
                         }
-                        return route('invoices.print', $record->originalInvoices()->first()->id);
+                        return route('invoices.print', $record->saleInvoice()->first()->slug);
+                    })
+                    ->openUrlInNewTab(),
+                Action::make('showInvoice')
+                    ->label(' فاتورة الشراء')
+                    ->icon('heroicon-o-eye')
+                    ->color('primary')
+                    ->visible(function ($record) {
+                        if($record->type == 'purchase'){
+                        // if ($record->reservation_id) {
+                        //     return Invoice::where('reservation_id', $record->reservation_id)
+                        //         ->where('type', '!=', 'refund')
+                        //         ->exists();
+                        // }
+                        return $record->purchaseInvoice()->exists();
+                        }
+                    })
+                    ->url(function ($record) {
+                        // if ($record->reservation_id) {
+                        //     $id = Invoice::where('reservation_id', $record->reservation_id)
+                        //         ->where('type', '!=', 'refund')
+                        //         ->value('id');
+                        //     return route('reservations.invoices.print', $id);
+                        // }
+                        return route('invoices.print', $record->purchaseInvoice()->first()->slug);
                     })
                     ->openUrlInNewTab(),
 
                 // عرض فاتورة الاسترجاع
                 Action::make('showRefundInvoice')
-                    ->label('عرض فاتورة الاسترجاع')
+                    ->label(' فاتورة الاسترجاع')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('warning')
                     ->visible(function ($record) {
@@ -574,7 +599,7 @@ class AccountStatementPage extends Page implements HasTable
                                 ->where('type', 'refund')
                                 ->exists();
                         }
-                        return $record->refundInvoices()->exists();
+                        return $record->refundInvoice()->exists();
 
                     }
                     })
@@ -585,7 +610,7 @@ class AccountStatementPage extends Page implements HasTable
                                 ->value('id');
                             return route('reservations.invoices.print', $id);
                         }
-                        return route('invoices.print', $record->refundInvoices()->first()->id);
+                        return route('invoices.print', $record->refundInvoice()->first()->slug);
                     })
                     ->openUrlInNewTab(),
 
@@ -720,7 +745,7 @@ class AccountStatementPage extends Page implements HasTable
                 //     ->label('إضافة فاتورة استرجاع')
                 //     ->icon('heroicon-o-arrow-uturn-left')
                 //     ->color('danger')
-                //     ->visible(fn($record) => $record->originalInvoices()->exists() && !$record->refundInvoices()->exists())
+                //     ->visible(fn($record) => $record->saleInvoice()->exists() && !$record->refundInvoice()->exists())
                 //     ->schema([
                 //         Grid::make(2)
                 //             ->schema([
@@ -739,7 +764,7 @@ class AccountStatementPage extends Page implements HasTable
                 //                 TextInput::make('original_invoice')
                 //                     ->label('الفاتورة الأصلية')
                 //                     ->default(function ($record) {
-                //                         $originalInvoice = $record->originalInvoices()->first();
+                //                         $originalInvoice = $record->saleInvoice()->first();
                 //                         return $originalInvoice ? $originalInvoice->invoice_number : 'لا توجد فاتورة';
                 //                     })
                 //                     ->disabled()
@@ -757,7 +782,7 @@ class AccountStatementPage extends Page implements HasTable
                 //             ->columnSpanFull(),
                 //     ])
                 //     ->action(function ($record, array $data) {
-                //         if ($record->refundInvoices()->exists()) {
+                //         if ($record->refundInvoice()->exists()) {
                 //             Notification::make()
                 //                 ->title('هذه التذكرة عليها فاتورة استرجاع بالفعل')
                 //                 ->danger()
@@ -765,7 +790,7 @@ class AccountStatementPage extends Page implements HasTable
                 //             return;
                 //         }
 
-                //         $originalInvoice = $record->originalInvoices()->first();
+                //         $originalInvoice = $record->saleInvoice()->first();
                 //         if (!$originalInvoice) {
                 //             Notification::make()
                 //                 ->title('لا توجد فاتورة أصلية للاسترجاع')
@@ -864,14 +889,16 @@ class AccountStatementPage extends Page implements HasTable
 
                                     $tickets = collect();
                                     foreach ($selectedRecords as $record) {
-                                        if ($record->ticket) {
-                                            $totalTaxes = ($record->ticket->cost_tax_amount ?? 0) + ($record->ticket->extra_tax_amount ?? 0);
+                                     $ticket = $record->ticket;
 
-                                            $tickets->push([
-                                                'ticket_number_core' => $record->ticket->ticket_number_core,
-                                                'airline_name' => $record->ticket->airline_name,
+                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type','!=', 'refund')->count() == 0) {
+                                      $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+
+                                           $tickets->push([
+                                                'ticket_number_core' => $ticket->ticket_number_core,
+                                                'airline_name' => $ticket->airline_name,
                                                 'total_taxes' => number_format($totalTaxes, 2),
-                                                'sale_total_amount' => number_format($record->ticket->sale_total_amount, 2),
+                                                'sale_total_amount' => number_format($ticket->sale_total_amount, 2),
                                             ]);
                                         }
                                     }
@@ -885,7 +912,8 @@ class AccountStatementPage extends Page implements HasTable
 
                             Textarea::make('notes')
                                 ->label('ملاحظات')
-                                ->columnSpanFull(),
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
                         ])
                         ->action(function ($records, array $data) {
                             $firstRecord = $records->first();
@@ -907,7 +935,7 @@ class AccountStatementPage extends Page implements HasTable
                                 return;
                             }
 
-                            $ticketsToInvoice = $tickets->where('is_invoiced', false);
+                            $ticketsToInvoice = $tickets->where('is_invoiced', false)->where('ticket_type_code','!=','VOID');
 
                             if ($ticketsToInvoice->isEmpty()) {
                                 Notification::make()
@@ -924,7 +952,7 @@ class AccountStatementPage extends Page implements HasTable
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
 
                             $invoice = Invoice::create([
-                                'type' => 'sale',
+                                'type' => $firstRecord->statementable_type ==  Supplier::class ?  'purchase' :'sale',
                                 'is_drafted' => false,
                                 'total_taxes' => $totalTaxes,
                                 'total_amount' => $totalAmount,
@@ -954,12 +982,11 @@ class AccountStatementPage extends Page implements HasTable
                         ->accessSelectedRecords(),
 
                     Action::make('addRefundInvoicesForStatements')
-                        ->label('فاتورة استرجاع')
-                        ->icon('heroicon-o-arrow-uturn-left')
-                        ->color('danger')
+                        ->label('إضافة فاتورة استرجاع')
+                        ->icon('heroicon-o-document-text')
                         ->schema([
                             Repeater::make('tickets')
-                                ->label('التذاكر المحددة')
+                                ->label('تفاصيل التذاكر')
                                 ->schema([
                                     Grid::make(2)
                                         ->schema([
@@ -973,8 +1000,8 @@ class AccountStatementPage extends Page implements HasTable
                                                 ->disabled()
                                                 ->dehydrated(),
 
-                                            TextInput::make('original_invoice')
-                                                ->label('الفاتورة الأصلية')
+                                            TextInput::make('total_taxes')
+                                                ->label('إجمالي الضرائب')
                                                 ->disabled()
                                                 ->dehydrated(),
 
@@ -993,17 +1020,16 @@ class AccountStatementPage extends Page implements HasTable
 
                                     $tickets = collect();
                                     foreach ($selectedRecords as $record) {
-                                        if ($record->ticket) {
-                                            $originalInvoice = $record->originalInvoices()->first();
+                                    $ticket = $record->ticket;
+
+                                        if ($ticket && $ticket->ticket_type_code == 'VOID' && $ticket->invoices()->where('type', 'refund')->count() == 0) {
+                                            $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+
                                             $tickets->push([
-                                                'ticket_number_core' => $record->ticket->ticket_number_core,
-                                                'airline_name' => $record->ticket->airline_name,
-                                                'original_invoice' => $originalInvoice ? $originalInvoice->invoice_number : 'لا توجد فاتورة',
-                                                'sale_total_amount' => number_format($record->ticket->sale_total_amount, 2),
-                                                'has_original_invoice' => !is_null($originalInvoice),
-                                                'has_refund_invoice' => $record->refundInvoices()->exists(),
-                                                'original_invoice_id' => $originalInvoice ? $originalInvoice->id : null,
-                                                'original_invoice_number' => $originalInvoice ? $originalInvoice->invoice_number : null,
+                                                'ticket_number_core' => $ticket->ticket_number_core,
+                                                'airline_name' => $ticket->airline_name,
+                                                'total_taxes' => number_format($totalTaxes, 2),
+                                                'sale_total_amount' => number_format($ticket->sale_total_amount, 2),
                                             ]);
                                         }
                                     }
@@ -1016,131 +1042,264 @@ class AccountStatementPage extends Page implements HasTable
                                 ->columnSpanFull(),
 
                             Textarea::make('notes')
-                                ->label('ملاحظات الاسترجاع')
-                                ->columnSpanFull(),
+                                ->label('ملاحظات')
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
                         ])
                         ->action(function ($records, array $data) {
-                            // تصفية السجلات التي لها فواتير أصلية ولا توجد لها فواتير استرجاع
-                            $eligibleRecords = $records->filter(function ($record) {
-                                return $record->originalInvoices()->exists() && !$record->refundInvoices()->exists();
-                            });
-
-                            if ($eligibleRecords->isEmpty()) {
+                            $firstRecord = $records->first();
+                            if (!$firstRecord) {
                                 Notification::make()
-                                    ->title('لا توجد كشوف حساب مؤهلة للاسترجاع')
-                                    ->body('جميع الكشوف المحددة إما ليس لها فواتير أصلية أو لها فواتير استرجاع مسبقة')
+                                    ->title('لم يتم اختيار أي كشوف حساب')
                                     ->danger()
                                     ->send();
                                 return;
                             }
 
-                            // تجميع التذاكر حسب الفاتورة الأصلية والجهة
-                            $invoicesGroup = [];
+                            $tickets = $records->pluck('ticket')->filter();
 
-                            foreach ($eligibleRecords as $record) {
-                                $originalInvoice = $record->originalInvoices()->first();
-                                $ticket = $record->ticket;
-
-                                if ($originalInvoice && $ticket) {
-                                    // مفتاح التجميع: الفاتورة الأصلية + الجهة
-                                    $groupKey = $originalInvoice->id . '_' . $record->statementable_type . '_' . $record->statementable_id;
-
-                                    if (!isset($invoicesGroup[$groupKey])) {
-                                        $invoicesGroup[$groupKey] = [
-                                            'original_invoice' => $originalInvoice,
-                                            'statementable_type' => $record->statementable_type,
-                                            'statementable_id' => $record->statementable_id,
-                                            'tickets' => [],
-                                            'total_taxes' => 0,
-                                            'total_amount' => 0,
-                                            'records_count' => 0,
-                                        ];
-                                    }
-
-                                    $invoicesGroup[$groupKey]['tickets'][] = $ticket;
-                                    $invoicesGroup[$groupKey]['total_taxes'] += ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-                                    $invoicesGroup[$groupKey]['total_amount'] += $ticket->sale_total_amount ?? 0;
-                                    $invoicesGroup[$groupKey]['records_count']++;
-                                }
-                            }
-
-                            if (empty($invoicesGroup)) {
+                            if ($tickets->isEmpty()) {
                                 Notification::make()
-                                    ->title('لا توجد تذاكر للاسترجاع')
+                                    ->title('لا توجد تذاكر مرتبطة بالكشوف المحددة')
                                     ->danger()
                                     ->send();
                                 return;
                             }
 
-                            $createdRefundInvoices = [];
+                            $ticketsToInvoice = $tickets->where('ticket_type_code','VOID');
 
-                            // إنشاء فاتورة استرجاع لكل مجموعة
-                            foreach ($invoicesGroup as $groupKey => $group) {
-                                $lastInvoiceId = Invoice::max('id') ?? 0;
-                                $refundInvoiceNumber = 'REF-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-
-                                // إنشاء فاتورة الاسترجاع
-                                $refundInvoice = Invoice::create([
-                                    'type' => 'refund',
-                                    'is_drafted' => false,
-                                    'total_taxes' => $group['total_taxes'],
-                                    'total_amount' => $group['total_amount'],
-                                    'invoice_number' => $refundInvoiceNumber,
-                                    'reference_num' => $group['original_invoice']->invoice_number, // رقم الفاتورة الأصلية
-                                    'notes' => $data['notes'] ?? null,
-                                    'invoiceable_type' => $group['statementable_type'],
-                                    'invoiceable_id' => $group['statementable_id'],
-                                ]);
-
-                                // ربط التذاكر بفاتورة الاسترجاع
-                                foreach ($group['tickets'] as $ticket) {
-                                    $refundInvoice->tickets()->attach($ticket->id);
-                                    $ticket->update(['is_refunded' => true]);
-
-                                    AccountStatement::logTicket(
-                                        $ticket,
-                                        $ticket->accountStatement->first()->statementable_type,
-                                        $ticket->accountStatement->first()->statementable_id,
-                                        $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
-                                        'refund'
-                                    );
-                                }
-
-                                $createdRefundInvoices[] = [
-                                    'refund_number' => $refundInvoiceNumber,
-                                    'original_number' => $group['original_invoice']->invoice_number,
-                                    'tickets_count' => count($group['tickets']),
-                                    'statementable' => self::getStatementableName($group['statementable_type'], $group['statementable_id'])
-                                ];
+                            if ($ticketsToInvoice->isEmpty()) {
+                                Notification::make()
+                                    ->title('جميع التذاكر المحددة عليها فواتير بالفعل')
+                                    ->danger()
+                                    ->send();
+                                return;
                             }
 
-                            $skippedRecords = $records->count() - $eligibleRecords->count();
+                            $totalTaxes = $ticketsToInvoice->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
+                            $totalAmount = $ticketsToInvoice->sum('sale_total_amount');
 
-                            // بناء رسالة النتيجة
-                            $message = "تم إنشاء " . count($createdRefundInvoices) . " فاتورة استرجاع:\n\n";
+                            $lastInvoiceId = Invoice::max('id') ?? 0;
+                            $invoiceNumber = 'REF-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
 
-                            foreach ($createdRefundInvoices as $invoice) {
-                                $message .= "• {$invoice['refund_number']} (استرجاع للفاتورة {$invoice['original_number']} - {$invoice['tickets_count']} تذكرة - {$invoice['statementable']})\n";
-                            }
+                            $invoice = Invoice::create([
+                                'type' => 'refund',
+                                'is_drafted' => false,
+                                'total_taxes' => $totalTaxes,
+                                'total_amount' => $totalAmount,
+                                'invoice_number' => $invoiceNumber,
+                                'notes' => $data['notes'] ?? null,
+                                'invoiceable_type' => $firstRecord->statementable_type,
+                                'invoiceable_id' => $firstRecord->statementable_id,
+                            ]);
 
-                            if ($skippedRecords > 0) {
-                                $message .= "\nتم تخطي {$skippedRecords} كشف حساب (لا توجد فواتير أصلية أو لها استرجاع مسبق)";
+                            foreach ($ticketsToInvoice as $ticket) {
+                                $invoice->tickets()->attach($ticket->id);
+                                $ticket->update(['is_invoiced' => true]);
                             }
 
                             Notification::make()
-                                ->title('فواتير الاسترجاع')
-                                ->body($message)
+                                ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber . ' لـ ' . $ticketsToInvoice->count() . ' تذكرة')
                                 ->success()
                                 ->send();
                         })
                         ->requiresConfirmation()
                         ->modalWidth('4xl')
-                        ->modalHeading('إنشاء فواتير استرجاع')
-                        ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
+                        ->modalHeading('إضافة فاتورة لكشوف الحساب المحددة')
+                        ->modalSubmitActionLabel('إنشاء الفاتورة')
                         ->color('danger')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
+
+                    // Action::make('addRefundInvoicesForStatements')
+                    //     ->label('فاتورة استرجاع')
+                    //     ->icon('heroicon-o-arrow-uturn-left')
+                    //     ->color('danger')
+                    //     ->schema([
+                    //         Repeater::make('tickets')
+                    //             ->label('التذاكر المحددة')
+                    //             ->schema([
+                    //                 Grid::make(2)
+                    //                     ->schema([
+                    //                         TextInput::make('ticket_number_core')
+                    //                             ->label('رقم التذكرة')
+                    //                             ->disabled()
+                    //                             ->dehydrated(),
+
+                    //                         TextInput::make('airline_name')
+                    //                             ->label('الخطوط الجوية')
+                    //                             ->disabled()
+                    //                             ->dehydrated(),
+
+                    //                         TextInput::make('original_invoice')
+                    //                             ->label('الفاتورة الأصلية')
+                    //                             ->disabled()
+                    //                             ->dehydrated(),
+
+                    //                         TextInput::make('sale_total_amount')
+                    //                             ->label('سعر البيع')
+                    //                             ->disabled()
+                    //                             ->dehydrated(),
+                    //                     ]),
+                    //             ])
+                    //             ->default(function ($livewire) {
+                    //                 $selectedRecords = $livewire->getSelectedTableRecords();
+
+                    //                 if (empty($selectedRecords)) {
+                    //                     return [];
+                    //                 }
+
+                    //                 $tickets = collect();
+                    //                 foreach ($selectedRecords as $record) {
+                    //                     if ($record->ticket) {
+                    //                         $originalInvoice = $record->saleInvoice()->first();
+                    //                         $tickets->push([
+                    //                             'ticket_number_core' => $record->ticket->ticket_number_core,
+                    //                             'airline_name' => $record->ticket->airline_name,
+                    //                             'original_invoice' => $originalInvoice ? $originalInvoice->invoice_number : 'لا توجد فاتورة',
+                    //                             'sale_total_amount' => number_format($record->ticket->sale_total_amount, 2),
+                    //                             'has_original_invoice' => !is_null($originalInvoice),
+                    //                             'has_refund_invoice' => $record->refundInvoice()->exists(),
+                    //                             'original_invoice_id' => $originalInvoice ? $originalInvoice->id : null,
+                    //                             'original_invoice_number' => $originalInvoice ? $originalInvoice->invoice_number : null,
+                    //                         ]);
+                    //                     }
+                    //                 }
+
+                    //                 return $tickets->toArray();
+                    //             })
+                    //             ->reorderable(false)
+                    //             ->addable(false)
+                    //             ->deletable(false)
+                    //             ->columnSpanFull(),
+
+                    //         Textarea::make('notes')
+                    //             ->label('ملاحظات الاسترجاع')
+                    //             ->columnSpanFull(),
+                    //     ])
+                    //     ->action(function ($records, array $data) {
+                    //         // تصفية السجلات التي لها فواتير أصلية ولا توجد لها فواتير استرجاع
+                    //         $eligibleRecords = $records->filter(function ($record) {
+                    //             return $record->saleInvoice()->exists() && !$record->refundInvoice()->exists();
+                    //         });
+
+                    //         if ($eligibleRecords->isEmpty()) {
+                    //             Notification::make()
+                    //                 ->title('لا توجد كشوف حساب مؤهلة للاسترجاع')
+                    //                 ->body('جميع الكشوف المحددة إما ليس لها فواتير أصلية أو لها فواتير استرجاع مسبقة')
+                    //                 ->danger()
+                    //                 ->send();
+                    //             return;
+                    //         }
+
+                    //         // تجميع التذاكر حسب الفاتورة الأصلية والجهة
+                    //         $invoicesGroup = [];
+
+                    //         foreach ($eligibleRecords as $record) {
+                    //             $originalInvoice = $record->saleInvoice()->first();
+                    //             $ticket = $record->ticket;
+
+                    //             if ($originalInvoice && $ticket) {
+                    //                 // مفتاح التجميع: الفاتورة الأصلية + الجهة
+                    //                 $groupKey = $originalInvoice->id . '_' . $record->statementable_type . '_' . $record->statementable_id;
+
+                    //                 if (!isset($invoicesGroup[$groupKey])) {
+                    //                     $invoicesGroup[$groupKey] = [
+                    //                         'original_invoice' => $originalInvoice,
+                    //                         'statementable_type' => $record->statementable_type,
+                    //                         'statementable_id' => $record->statementable_id,
+                    //                         'tickets' => [],
+                    //                         'total_taxes' => 0,
+                    //                         'total_amount' => 0,
+                    //                         'records_count' => 0,
+                    //                     ];
+                    //                 }
+
+                    //                 $invoicesGroup[$groupKey]['tickets'][] = $ticket;
+                    //                 $invoicesGroup[$groupKey]['total_taxes'] += ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                    //                 $invoicesGroup[$groupKey]['total_amount'] += $ticket->sale_total_amount ?? 0;
+                    //                 $invoicesGroup[$groupKey]['records_count']++;
+                    //             }
+                    //         }
+
+                    //         if (empty($invoicesGroup)) {
+                    //             Notification::make()
+                    //                 ->title('لا توجد تذاكر للاسترجاع')
+                    //                 ->danger()
+                    //                 ->send();
+                    //             return;
+                    //         }
+
+                    //         $createdRefundInvoices = [];
+
+                    //         // إنشاء فاتورة استرجاع لكل مجموعة
+                    //         foreach ($invoicesGroup as $groupKey => $group) {
+                    //             $lastInvoiceId = Invoice::max('id') ?? 0;
+                    //             $refundInvoiceNumber = 'REF-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
+
+                    //             // إنشاء فاتورة الاسترجاع
+                    //             $refundInvoice = Invoice::create([
+                    //                 'type' => 'refund',
+                    //                 'is_drafted' => false,
+                    //                 'total_taxes' => $group['total_taxes'],
+                    //                 'total_amount' => $group['total_amount'],
+                    //                 'invoice_number' => $refundInvoiceNumber,
+                    //                 'reference_num' => $group['original_invoice']->invoice_number, // رقم الفاتورة الأصلية
+                    //                 'notes' => $data['notes'] ?? null,
+                    //                 'invoiceable_type' => $group['statementable_type'],
+                    //                 'invoiceable_id' => $group['statementable_id'],
+                    //             ]);
+
+                    //             // ربط التذاكر بفاتورة الاسترجاع
+                    //             foreach ($group['tickets'] as $ticket) {
+                    //                 $refundInvoice->tickets()->attach($ticket->id);
+                    //                 $ticket->update(['is_refunded' => true]);
+
+                    //                 AccountStatement::logTicket(
+                    //                     $ticket,
+                    //                     $ticket->accountStatement->first()->statementable_type,
+                    //                     $ticket->accountStatement->first()->statementable_id,
+                    //                     $ticket->accountStatement->first()->statementable_type == Supplier::class  ? false : true,
+                    //                     'refund'
+                    //                 );
+                    //             }
+
+                    //             $createdRefundInvoices[] = [
+                    //                 'refund_number' => $refundInvoiceNumber,
+                    //                 'original_number' => $group['original_invoice']->invoice_number,
+                    //                 'tickets_count' => count($group['tickets']),
+                    //                 'statementable' => self::getStatementableName($group['statementable_type'], $group['statementable_id'])
+                    //             ];
+                    //         }
+
+                    //         $skippedRecords = $records->count() - $eligibleRecords->count();
+
+                    //         // بناء رسالة النتيجة
+                    //         $message = "تم إنشاء " . count($createdRefundInvoices) . " فاتورة استرجاع:\n\n";
+
+                    //         foreach ($createdRefundInvoices as $invoice) {
+                    //             $message .= "• {$invoice['refund_number']} (استرجاع للفاتورة {$invoice['original_number']} - {$invoice['tickets_count']} تذكرة - {$invoice['statementable']})\n";
+                    //         }
+
+                    //         if ($skippedRecords > 0) {
+                    //             $message .= "\nتم تخطي {$skippedRecords} كشف حساب (لا توجد فواتير أصلية أو لها استرجاع مسبق)";
+                    //         }
+
+                    //         Notification::make()
+                    //             ->title('فواتير الاسترجاع')
+                    //             ->body($message)
+                    //             ->success()
+                    //             ->send();
+                    //     })
+                    //     ->requiresConfirmation()
+                    //     ->modalWidth('4xl')
+                    //     ->modalHeading('إنشاء فواتير استرجاع')
+                    //     ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
+                    //     ->color('danger')
+                    //     ->bulk()
+                    //     ->deselectRecordsAfterCompletion()
+                    //     ->accessSelectedRecords(),
                 ]),
             ]);
     }

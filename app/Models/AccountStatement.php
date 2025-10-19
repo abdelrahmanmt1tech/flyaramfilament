@@ -146,26 +146,30 @@ class AccountStatement extends Model
     }
 
 
-    public function refundInvoices()
+    public function refundInvoice()
     {
         return $this->invoices()->where('type', 'refund');
     }
 
 
-    public function originalInvoices()
+    public function saleInvoice()
     {
-        return $this->invoices()->where('type', '!=', 'refund');
+        return $this->invoices()->where('type', 'sale');
+    }
+    public function purchaseInvoice()
+    {
+        return $this->invoices()->where('type', 'purchase');
     }
 
 
     public function hasRefundInvoice()
     {
-        return $this->refundInvoices()->exists();
+        return $this->refundInvoice()->exists();
     }
 
 
     public function hasOriginalInvoice()
     {
-        return $this->originalInvoices()->exists();
+        return $this->saleInvoice()->exists();
     }
 }
