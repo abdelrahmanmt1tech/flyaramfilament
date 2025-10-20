@@ -155,20 +155,20 @@ class ReservationsTable
                             ->send();
                     }),
                 Action::make('printReservationInvoice')
-                ->label('عرض الفاتورة')
+                ->label('الفاتورة')
                 ->icon('heroicon-o-printer')
                 ->visible(fn($record) => \App\Models\Invoice::where('reservation_id', $record->id)->exists())
-                ->url(fn($record) => route('reservations.invoices.print', \App\Models\Invoice::where('reservation_id', $record->id)->value('id')))
+                ->url(fn($record) => route('reservations.invoices.print', \App\Models\Invoice::where('reservation_id', $record->id)->value('slug')))
                 ->openUrlInNewTab(),
 
                 Action::make('printReservationRefundInvoice')
-                    ->label('عرض فاتورة الاسترجاع')
+                    ->label('فاتورة الاسترجاع')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
                     ->visible(fn($record) => \App\Models\Invoice::where('reservation_id', $record->id)->where('type', 'refund')->exists())
                     ->url(fn($record) => route(
                         'reservations.invoices.print',
-                        \App\Models\Invoice::where('reservation_id', $record->id)->where('type', 'refund')->value('id')
+                        \App\Models\Invoice::where('reservation_id', $record->id)->where('type', 'refund')->value('slug')
                     ))
                     ->openUrlInNewTab(),
 

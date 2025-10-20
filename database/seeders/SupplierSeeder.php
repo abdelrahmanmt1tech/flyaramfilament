@@ -15,17 +15,16 @@ class SupplierSeeder extends Seeder
         Supplier::updateOrCreate(
             ['id' => 1],
             [
-                'name' => 'الخطوط السعودية',
-                'tax_number' => '1234567890',
+                'name' => 'iata',
             ]
         );
 
-        Supplier::updateOrCreate(
-            ['id' => 2],
-            [
-                'name' => 'فلاي دبي',
-                'tax_number' => '0987654321',
-            ]
-        );
+        // Supplier::updateOrCreate(
+        //     ['id' => 2],
+        //     [
+        //         'name' => 'فلاي دبي',
+        //         'tax_number' => '0987654321',
+        //     ]
+        // );
     }
 }

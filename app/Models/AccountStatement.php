@@ -83,7 +83,7 @@ class AccountStatement extends Model
      * Log an account statement entry for a reservation.
      * Debit = sum of reservation items' total_amount, Credit = 0
      */
-    public static function logReservation(Reservation $reservation)
+    public static function logReservation(Reservation $reservation , $type = 'sale')
     {
         $total = (float) $reservation->items()->sum('total_amount');
 
@@ -100,6 +100,8 @@ class AccountStatement extends Model
             'debit'              => $total,
             'credit'             => 0,
             'reservation_id'     => $reservation->id,
+            'type' => $type,
+
         ]);
     }
 

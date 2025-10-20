@@ -1,595 +1,271 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فاتورة ضريبية مبسطة</title>
+    <title>Reservation Invoice</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #fff;
+            color: #000;
         }
 
-        .invoice-container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        .container {
+            padding: 20px;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
-            position: relative;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            max-height: 70px;
         }
 
-        .logo-text {
-            font-size: 32px;
-            font-weight: bold;
+        h1 {
+            font-size: 24px;
+            margin: 0;
         }
 
-        .fly {
-            color: #ff6b35;
-        }
-
-        .aram {
-            color: #2c3e50;
-        }
-
-        .header-title {
-            text-align: left;
-        }
-
-        .header-title h1 {
-            font-size: 18px;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .header-title p {
+        h3.section-title {
+            background: #f2f2f2;
+            padding: 6px 8px;
             font-size: 14px;
-            color: #7f8c8d;
+            margin: 16px 0 6px;
+            border-left: 4px solid #333;
         }
 
-        .qr-code {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-        }
-
-        .qr-code svg {
-            width: 80px;
-            height: 80px;
-        }
-
-        .invoice-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .info-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: #6c757d;
-            font-size: 13px;
-        }
-
-        .info-value {
-            color: #2c3e50;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        .parties-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .party-box {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .party-title {
-            background: #34495e;
-            color: white;
-            padding: 10px 15px;
-            margin: -20px -20px 15px -20px;
-            border-radius: 7px 7px 0 0;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .party-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            font-size: 13px;
-        }
-
-        .party-label {
-            color: #6c757d;
-        }
-
-        .party-value {
-            color: #2c3e50;
-            font-weight: 500;
-            text-align: left;
-        }
-
-        .items-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            overflow: hidden;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 6px;
         }
 
-        .items-table thead {
-            background: #34495e;
-            color: white;
-        }
-
-        .items-table th {
-            padding: 12px;
-            text-align: center;
+        th,
+        td {
+            border: 1px solid #333;
+            padding: 6px;
             font-size: 13px;
-            font-weight: 600;
         }
 
-        .items-table td {
-            padding: 15px 12px;
-            text-align: center;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 12px;
-            color: #2c3e50;
-        }
-
-        .items-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .items-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .item-description {
-            text-align: right;
-            line-height: 1.6;
-        }
-
-        .item-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #2c3e50;
-        }
-
-        .item-details {
-            font-size: 11px;
-            color: #6c757d;
-        }
-
-        .totals-section {
-            max-width: 400px;
-            margin-right: auto;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .total-row:last-child {
-            border-bottom: none;
-            font-size: 16px;
-            font-weight: bold;
-            color: #2c3e50;
-            padding-top: 15px;
-            border-top: 2px solid #34495e;
+        th {
+            background: #eaeaea;
+            text-align: left;
         }
 
         .print-button {
             position: fixed;
-            top: 20px;
-            right: 40px;
-            padding: 12px 24px;
-            font-size: 16px;
-            background-color: #4CAF50;
+            top: 16px;
+            right: 24px;
+            padding: 10px 18px;
+            font-size: 14px;
+            background: #4CAF50;
             color: #fff;
             border: none;
             cursor: pointer;
             z-index: 1000;
-            border-radius: 5px;
         }
 
         @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-
-            .invoice-container {
-                box-shadow: none;
-                padding: 20px;
-            }
-
             .print-button {
                 display: none;
             }
-        }
 
-        @media (max-width: 768px) {
-
-            .invoice-info,
-            .parties-section {
-                grid-template-columns: 1fr;
+            body,
+            .container {
+                margin: 0;
+                padding: 0;
             }
         }
 
-        .invoice-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            /* Two equal columns */
-            gap: 20px;
-            /* Reduced gap for better alignment */
-            margin-bottom: 30px;
+        .totals {
+            margin-top: 12px;
+            width: 40%;
+            margin-left: auto;
         }
 
-        .info-section,
-        .payment-currency-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
+        .text-right {
+            text-align: right;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+        .text-center {
+            text-align: center;
         }
 
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: #6c757d;
-            font-size: 13px;
-        }
-
-        .info-value {
-            color: #2c3e50;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        @media (max-width: 768px) {
-            .invoice-info {
-                grid-template-columns: 1fr;
-                /* Stack vertically on mobile */
-            }
+        .qr-code {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            /* align-content: center; */
+            width: 120px;
         }
     </style>
 </head>
 
 <body>
-
     <button class="print-button" onclick="window.print()">🖨️ طباعة</button>
-
-    <div class="invoice-container">
-        <div class="header">
-            <div class="logo">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="logo" width="100">
-                {{-- <h1>تذكرة سفر / Ticket Invoice</h1> --}}
-
-            </div>
-
-            <div class="qr-code">
-                {!! $qrCode !!}
-                <div style="font-size: 10px; margin-top: 5px;">Scan to verify</div>
-            </div>
+    <div class="container">
+        <div class="qr-code">
+            {!! $qrCode !!}
+            <div style="text-align: center; font-size: 10px; margin-top: 5px;">Scan to verify</div>
         </div>
+        <div class="header">
+            <img src="{{ asset('logo.png') }}" alt="Logo" class="logo" width="100">
+        </div>
+
+        @if (($invoice->type ?? null) === 'refund')
+            <h2
+                style="background:#f2f2f2;border:2px dashed #d33;color:#d33;text-align:center;padding:8px;margin-top:0;">
+                فاتورة استرجاع / REFUND INVOICE
+            </h2>
+        @endif
 
         @php
             $companyKeys = [
                 'company_name_en',
-                'company_name_ar',
                 'company_address_en',
-                'company_address_ar',
                 'tax_number',
                 'commercial_register',
                 'tourism_license',
-                'building_no',
-                'street',
-                'district',
-                'city',
-                'postal_code',
-                'additional_no',
             ];
             $company = \App\Models\Setting::whereIn('key', $companyKeys)->pluck('value', 'key');
-        @endphp
-        <div class="invoice-info">
-            <div class="info-section">
-                <div class="info-row">
-                    <span class="info-label">Invoice Number:</span>
-                    <span class="info-value">{{ $invoice->invoice_number }}</span>
-                    <span class="info-label">:رقم الفاتورة</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Issue Time:</span>
-                    <span class="info-value">{{ $invoice->created_at->format('Y-m-d H:i:s') }}</span>
-                    <span class="info-label">:وقت الإصدار</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Supply Date:</span>
-                    <span class="info-value">{{ $invoice->created_at->format('Y-m-d') }}</span>
-                    <span class="info-label">:تاريخ التوريد</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Supply (Hijri):</span>
-                    <span class="info-value">-</span>
-                    <span class="info-label">:تاريخ التوريد (هجري)</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Due Date:</span>
-                    <span
-                        class="info-value">{{ $invoice->due_date ? $invoice->due_date->format('Y-m-d') : $invoice->created_at->format('Y-m-d') }}</span>
-                    <span class="info-label">:تاريخ الاستحقاق</span>
-                </div>
-            </div>
-            <div class="payment-currency-section">
-                <div class="info-row">
-                    <span class="info-label">حالة الدفع:</span>
-                    <span class="info-value">استحقت الدفع - مسجلة</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">عملة الفاتورة:</span>
-                    <span class="info-value">SAR</span>
-                </div>
-            </div>
-        </div>
 
-        @php
-            $ticket = $invoice->tickets->first();
-            $buyer = $ticket->client ?? ($ticket->supplier ?? ($ticket->branch ?? $ticket->franchise));
+            // Related entity from reservation morph
+            $related = $reservation?->related;
+            $relatedName = $related->company_name ?? ($related->name ?? '');
+
+            // Passenger on reservation
+            $passengerName = $reservation?->passenger?->first_name;
+
+            // Items info
+            $items = $reservation?->items()->with('supplier')->get();
+
+            // Service type: prefer item's service_type; fallback to mapped Arabic by reservation_type or raw
+            $reservationTypes = [
+                'hotel' => 'فندق',
+                'car' => 'سيارة',
+                'tourism' => 'سياحة',
+                'visa' => 'تأشيرات',
+                'international_license' => 'رخصة قيادة دولية',
+                'train' => 'حجز قطار',
+                'meeting_room' => 'حجز قاعة إجتماعات',
+                'internal_transport' => 'تنقلات داخلية ',
+                'other' => 'أخرى',
+              ];
         @endphp
 
-        <div class="parties-section">
-            <div class="party-box">
-                <div class="party-title">المشتري - Buyer</div>
-                <div class="party-row">
-                    <span class="party-label">:الاسم</span>
-                    <span class="party-value">{{ $buyer->company_name ?? ($buyer->name ?? '-') }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:رقم المبنى</span>
-                    <span class="party-value">-</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:العنوان (الشارع)</span>
-                    <span class="party-value">{{ $buyer->address ?? ($buyer->contactInfo->address ?? '-') }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:المنطقة</span>
-                    <span class="party-value">-</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:المدينة</span>
-                    <span class="party-value">-</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الدولة</span>
-                    <span class="party-value">SA - المملكة العربية السعودية</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرمز البريدي</span>
-                    <span class="party-value">-</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرقم الإضافي</span>
-                    <span class="party-value">-</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرقم الضريبي</span>
-                    <span class="party-value">{{ $buyer->tax_number ?? '-' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:بطاقة تجارية</span>
-                    <span class="party-value">-</span>
-                </div>
-            </div>
+        <h3 class="section-title">Company Details</h3>
+        <table>
+            <tr>
+                <th>Company Name</th>
+                <td>{{ $company['company_name_en'] ?? '' }}</td>
+                <th>Address</th>
+                <td>{{ $company['company_address_en'] ?? '' }}</td>
+            </tr>
+            <tr>
+                <th>Tax Number</th>
+                <td>{{ $company['tax_number'] ?? '' }}</td>
+                <th>Commercial Register</th>
+                <td>{{ $company['commercial_register'] ?? '' }}</td>
+            </tr>
+            <tr>
+                <th>Tourism License</th>
+                <td colspan="3">{{ $company['tourism_license'] ?? '' }}</td>
+            </tr>
+        </table>
 
-            <div class="party-box">
-                <div class="party-title">البائع - Seller</div>
-                <div class="party-row">
-                    <span class="party-label">:الاسم</span>
-                    <span
-                        class="party-value">{{ $company['company_name_ar'] ?? ($company['company_name_en'] ?? '') }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:رقم المبنى</span>
-                    <span class="party-value">{{ $company['building_no'] ?? '-' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:العنوان (الشارع)</span>
-                    <span class="party-value">{{ $company['street'] ?? ($company['company_address_ar'] ?? '-') }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:المنطقة</span>
-                    <span class="party-value">{{ $company['district'] ?? '-' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:المدينة</span>
-                    <span class="party-value">{{ $company['city'] ?? 'جدة' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الدولة</span>
-                    <span class="party-value">SA - المملكة العربية السعودية</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرمز البريدي</span>
-                    <span class="party-value">{{ $company['postal_code'] ?? '-' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرقم الإضافي</span>
-                    <span class="party-value">{{ $company['additional_no'] ?? '-' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:الرقم الضريبي</span>
-                    <span class="party-value">{{ $company['tax_number'] ?? '' }}</span>
-                </div>
-                <div class="party-row">
-                    <span class="party-label">:السجل التجاري</span>
-                    <span class="party-value">{{ $company['commercial_register'] ?? '' }}</span>
-                </div>
-            </div>
-        </div>
+        <h3 class="section-title">Invoice Details</h3>
+        <table>
+            <tr>
+                <th>Invoice No</th>
+                <td>{{ $invoice->invoice_number }}</td>
+                <th>Date</th>
+                <td>{{ optional($invoice->created_at)->format('Y-m-d') }}</td>
+            </tr>
+            <tr>
+                <th>Reservation No</th>
+                <td>{{ $reservation?->reservation_number }}</td>
+                <th>Due Date</th>
+                <td>{{ optional($invoice->due_date)->format('Y-m-d') }}</td>
+            </tr>
+        </table>
 
-        <table class="items-table">
+        <h3 class="section-title">Client Details</h3>
+        <table>
+            <tr>
+                <th>Client Name</th>
+                <td>{{ $relatedName }}</td>
+                <th>Passenger</th>
+                <td>{{ $passengerName ?? '-' }}</td>
+            </tr>
+        </table>
+
+        <h3 class="section-title">Reservation Items</h3>
+        <table>
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>البند / Item</th>
-                    <th>السعر / Rate</th>
-                    <th>الكمية / Qty</th>
-                    <th>الاجمالي بدون الضريبة</th>
-                    <th>الضرائب </th>
-                    <th>الضرائب الإضافية</th>
-                    <th>نسبة الضريبة من الاجمالي</th>
-                    <th>الإجمالي</th>
+                    <th>Service Type</th>
+                    <th>Supplier</th>
+                    <th>Details</th>
+                    <th class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($tickets as $index => $ticket)
+                @php $row = 1; @endphp
+                @forelse($items as $item)
+                    @php
+                        $serviceType =
+                            $item->service_type ?:
+                            $reservationTypes[$item->reservation_type] ?? $item->reservation_type;
+                        $supplierName = $item->supplier->name ?? '-';
+                    @endphp
                     <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td class="item-description">
-                            <div class="item-title">تذكرة جوال / Flight Ticket</div>
-                            <div class="item-details">
-                                شركة الطيران: {{ $ticket->airline->name ?? ($ticket->airline_name ?? '-') }}
-                                @if ($ticket->airline)
-                                    ({{ $ticket->airline->iata_code ?? '' }})
-                                @endif
-                                <br>
-                                @if ($ticket->passengers->count() > 0)
-                                    الراكب:
-                                    @foreach ($ticket->passengers as $passenger)
-                                        {{ $passenger->first_name }}
-                                        {{ $passenger->last_name }}{{ !$loop->last ? '، ' : '' }}
-                                    @endforeach
-                                    <br>
-                                @endif
-                                رقم التذكرة:
-                                {{ $ticket->ticket_number_full ?? ($ticket->ticket_number_core ?? '-') }}<br>
-                                رقم الحجز (PNR): {{ $ticket->pnr ?? '-' }}<br>
-                                تاريخ الإصدار:
-                                {{ $ticket->issue_date ? $ticket->issue_date->format('Y-m-d') : '-' }}<br>
-                                @if ($ticket->segments->count() > 0)
-                                    المسار:
-                                    {{ $ticket->segments->pluck('origin.iata')->join(' → ') }}
-                                    →
-                                    {{ $ticket->segments->last()->destination->iata }}
-                                    <br>
-                                    @foreach ($ticket->segments as $segment)
-                                        رقم الرحلة: {{ $segment->flight_number ?? '-' }}<br>
-                                        المغادرة:
-                                        {{ $segment->departure_at ? $segment->departure_at->format('Y-m-d H:i') : '-' }}<br>
-                                    @endforeach
-                                @else
-                                    المسار: {{ $ticket->itinerary_string ?? '-' }}<br>
-                                @endif
-                            </div>
+                        <td>{{ $row++ }}</td>
+                        <td>{{ $serviceType }}</td>
+                        <td>{{ $supplierName }}</td>
+                        <td>
+                            @if ($item->isHotel())
+                                {{ $item->hotel_name }} / {{ $item->room_type }} / {{ $item->nights_count }} nights
+                            @else
+                                {{ $item->service_details ?? '-' }}
+                            @endif
                         </td>
-                        <td>{{ number_format($ticket->cost_base_amount ?? 0, 2) }}</td>
-                        <td>1</td>
-                        <td>{{ number_format($ticket->cost_base_amount ?? 0, 2) }}</td>
-                        {{-- <td>{{ $ticket->taxType->value ?? '0' }}%</td> --}}
-                        <td>{{ number_format($ticket->cost_tax_amount ?? 0, 2) }}</td>
-                        <td>{{ number_format($ticket->extra_tax_amount ?? 0, 2) }}</td>
-                        @php
-                            $taxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-                            $saleAmount = $ticket->sale_total_amount ?? 0;
-                            $percentage = $saleAmount > 0 ? ($taxes / $saleAmount) * 100 : 0;
-                        @endphp
-
-                        <td>{{ number_format($percentage, 2) }}%</td>
-                        <td>{{ number_format($ticket->sale_total_amount ?? 0, 2) }}</td>
+                        <td class="text-right">{{ number_format((float) $item->total_amount, 2) }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="5" class="text-center">No items</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
 
-        @php
-            $subtotal = $tickets->sum('cost_base_amount');
-            $totalTaxes = $tickets->sum(function ($t) {
-                return ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0);
-            });
-            $totalAmount = $tickets->sum('sale_total_amount');
-            $currency = $tickets->first()->currency->code ?? 'SAR';
-        @endphp
+        <table class="totals">
+            <tr>
+                <th>Total</th>
+                <td class="text-right">{{ number_format((float) $invoice->total_amount, 2) }}</td>
+            </tr>
+        </table>
 
-        <div class="totals-section">
-            <div class="total-row">
-                <span>المبلغ الإجمالي (Subtotal):</span>
-                <span>{{ number_format($subtotal, 2) }} {{ $currency }}</span>
-            </div>
-            <div class="total-row">
-                <span>الضريبة (Tax):</span>
-                <span>{{ number_format($totalTaxes, 2) }} {{ $currency }}</span>
-            </div>
-            <div class="total-row">
-                <span>الإجمالي النهائي (Total):</span>
-                <span>{{ number_format($totalAmount, 2) }} {{ $currency }}</span>
-            </div>
-        </div>
+        @if (!empty($invoice->notes))
+            <h3 class="section-title">Notes</h3>
+            <table>
+                <tr>
+                    <td>{{ $invoice->notes }}</td>
+                </tr>
+            </table>
+        @endif
     </div>
 </body>
 

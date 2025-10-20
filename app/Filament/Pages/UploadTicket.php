@@ -286,10 +286,10 @@ TRUNCATE `ticket_taxes`;
 
 
 
-            if ($dto->supplier)
+            // if ($dto->supplier)
             $supplier =Supplier::firstOrCreate(
-                [ 'name' => $dto->supplier ],
-                ['name' => $dto->supplier , 'tax_number' => null ,] );
+                [ 'name' => 'iata' ],
+                ['name' => 'iata' , 'tax_number' => null ,] );
 
 
             $sales_user_id =  null ;
@@ -332,7 +332,7 @@ TRUNCATE `ticket_taxes`;
                 'branch_code' => $dto->branchCode,
                 'office_id' => $dto->officeId,
                 'created_by_user' => $dto->createdByUser,
-                'supplier_id' => $dto->supplier ? optional(  $supplier )->id : null,
+                'supplier_id' =>  $supplier->id,
                 'currency_id' => $dto->price?->baseCurrency ?
                     optional(Currency::firstOrCreate(['symbol' => $dto->price->baseCurrency], ['name' => $dto->price->baseCurrency])->first())->id : null,
                 'cost_base_amount' => $dto->price->baseAmount,

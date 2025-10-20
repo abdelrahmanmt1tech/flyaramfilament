@@ -321,42 +321,42 @@ class AccountStatementPage extends Page implements HasTable
                     ->label('الجهة'),
 
                 // عمود جديد لعرض حالة الفاتورة
-                TextColumn::make('invoice_status')
-                    ->label('حالة الفاتورة')
-                    ->badge()
-                    ->getStateUsing(function ($record) {
-                        if ($record->type === 'refund') {
-                            return 'مسترجعة';
-                        }
+                // TextColumn::make('invoice_status')
+                //     ->label('حالة الفاتورة')
+                //     ->badge()
+                //     ->getStateUsing(function ($record) {
+                //         if ($record->type === 'refund') {
+                //             return 'مسترجعة';
+                //         }
                         
-                        if ($record->type === 'sale') {
-                            return $record->invoices()->exists() ? 'مفوترة' : 'غير مفوترة';
-                        }
+                //         if ($record->type === 'sale') {
+                //             return $record->invoices()->exists() ? 'مفوترة' : 'غير مفوترة';
+                //         }
                         
-                        return null;
-                    })
-                    ->colors([
-                        'success' => 'مفوترة',
-                        'danger' => 'مسترجعة',
-                        'warning' => 'غير مفوترة',
-                    ]),
+                //         return null;
+                //     })
+                //     ->colors([
+                //         'success' => 'مفوترة',
+                //         'danger' => 'مسترجعة',
+                //         'warning' => 'غير مفوترة',
+                //     ]),
 
                 // نوع الفاتورة (حجز أم تذكرة)
                 TextColumn::make('invoice_type')
-                    ->label('نوع الفاتورة')
+                    ->label('نوع الحساب')
                     ->badge()
                     ->getStateUsing(function ($record) {
                         if ($record->reservation_id) {
-                            return 'فاتورة حجز';
+                            return ' حجز';
                         }
                         if ($record->saleInvoice()->exists() || $record->refundInvoice()->exists()) {
-                            return 'فاتورة تذكرة';
+                            return ' تذكرة';
                         }
                         return '-';
                     })
                     ->colors([
-                        'primary' => 'فاتورة حجز',
-                        'info' => 'فاتورة تذكرة',
+                        'primary' => ' حجز',
+                        'info' => ' تذكرة',
                         'gray' => '-',
                     ]),
             ])
@@ -554,10 +554,10 @@ class AccountStatementPage extends Page implements HasTable
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
-                            $id = Invoice::where('reservation_id', $record->reservation_id)
+                            $slug = Invoice::where('reservation_id', $record->reservation_id)
                                 ->where('type', '!=', 'refund')
-                                ->value('id');
-                            return route('reservations.invoices.print', $id);
+                                ->value('slug');
+                            return route('reservations.invoices.print', $slug);
                         }
                         return route('invoices.print', $record->saleInvoice()->first()->slug);
                     })
@@ -605,10 +605,10 @@ class AccountStatementPage extends Page implements HasTable
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
-                            $id = Invoice::where('reservation_id', $record->reservation_id)
+                            $slug = Invoice::where('reservation_id', $record->reservation_id)
                                 ->where('type', 'refund')
-                                ->value('id');
-                            return route('reservations.invoices.print', $id);
+                                ->value('slug');
+                            return route('reservations.invoices.print', $slug);
                         }
                         return route('invoices.print', $record->refundInvoice()->first()->slug);
                     })

@@ -19,7 +19,7 @@ public function printInvoice($slug)
         ->size(120)
         ->generate($invoice->secure_url);
 
-    return view('invoices.test', compact('tickets', 'invoice', 'qrCode'));
+    return view('invoices.invoice', compact('tickets', 'invoice', 'qrCode'));
 }
 
 public function printReservationInvoice($slug)

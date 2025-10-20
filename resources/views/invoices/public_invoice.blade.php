@@ -404,9 +404,9 @@
                 {{ $invoiceTypeText }}
             </div>
 
-            <div class="qr-code">
+            {{-- <div class="qr-code">
                 {!! $qrCode !!}
-            </div>
+            </div> --}}
         </div>
 
         @php
@@ -754,7 +754,7 @@
 
         <div class="totals-section">
             <div class="total-row">
-                <span>المبلغ الإجمالي (Subtotal):</span>
+                <span>المبلغ الإجمالي قبل الضريبة (Subtotal):</span>
                 <span>{{ number_format($subtotal, 2) }} {{ $currency }}</span>
             </div>
             <div class="total-row">

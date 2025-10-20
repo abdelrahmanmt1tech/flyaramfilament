@@ -27,7 +27,7 @@ class CreateReservation extends CreateRecord
         if ($sum > 0) {
             // Ensure we have related info available on the record
             $this->record->refresh();
-            AccountStatement::logReservation($this->record);
+            AccountStatement::logReservation($this->record, 'sale');
         }
     }
 }

@@ -585,7 +585,7 @@ class TicketsTable
                             }
 
                             // فلترة التذاكر بحيث نأخذ فقط اللي نوعها VOID
-                            $voidTickets = $selectedRecords->filter(fn($ticket) => $ticket->ticket_type_code !== 'VOID' && $ticket->invoices()->where('type','!=', 'refund')->count() == 0);
+                            $voidTickets = $selectedRecords->filter(fn($ticket) => $ticket->ticket_type_code !== 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0);
 
                             return $voidTickets->map(function ($ticket) {
                                 $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
@@ -648,7 +648,7 @@ class TicketsTable
 
                             // $records = $records->reject(fn($t) => $t->is_invoiced);
                             // $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
-                            $records = $records->reject(fn($t) => $t->is_invoiced || $t->ticket_type_code == 'VOID');
+                            $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
 
                             
                             if ($records->isEmpty()) {
@@ -804,7 +804,7 @@ class TicketsTable
 
                             // $records = $records->reject(fn($t) => $t->is_invoiced);
                             // $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
-                            $records = $records->reject(fn($t) => $t->is_invoiced || $t->ticket_type_code !== 'VOID');
+                            $records = $records->reject(fn($t) =>  $t->ticket_type_code !== 'VOID');
 
                             // foreach ($records as $record) {
                             //    $isSupplier = $data['statementable_type'] == Supplier::class; //عشان دي استرجاع ف المدين هيكون

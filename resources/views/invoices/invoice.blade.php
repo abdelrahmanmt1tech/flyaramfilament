@@ -429,7 +429,7 @@
             
             // تحديد الطرف الآخر (العميل/المورد/الفرع/الفرانشايز)
             $ticket = $invoice->tickets->first();
-            $otherParty = $ticket->client ?? ($ticket->supplier ?? ($ticket->branch ?? $ticket->franchise));
+            $otherParty = $ticket->client ?? ($ticket->branch ?? $ticket->franchise);
             
             // تحديد البائع والمشتري حسب نوع الفاتورة
             $isSale = $invoice->type === 'sale';
@@ -754,7 +754,7 @@
 
         <div class="totals-section">
             <div class="total-row">
-                <span>المبلغ الإجمالي (Subtotal):</span>
+                <span>المبلغ الإجمالي قبل الضريبة (Subtotal):</span>
                 <span>{{ number_format($subtotal, 2) }} {{ $currency }}</span>
             </div>
             <div class="total-row">
