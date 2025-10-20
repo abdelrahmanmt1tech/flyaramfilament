@@ -28,6 +28,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -49,11 +50,13 @@ class AccountStatementPage extends Page implements HasTable
         'tableSortColumn',
         'tableSortDirection',
         'tableFilters',
+        'activeTab' => ['except' => 'without_invoices'],
     ];
 
     protected string $view = 'filament.pages.account-statement-page';
 
     public ?Model $model = null;
+    public ?string $activeTab = 'without_invoices';
 
     public function getTitle(): string
     {
@@ -238,10 +241,14 @@ class AccountStatementPage extends Page implements HasTable
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::DocumentText;
 
-    public static function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
-            ->query(AccountStatement::latest())
+            ->query(function () {
+                $query = AccountStatement::query()->latest();
+                $query = $this->applyTabFilter($query);
+                return $query;
+            })
             ->columns([
                 TextColumn::make('date')
                     ->label('التاريخ')
@@ -851,7 +858,7 @@ class AccountStatementPage extends Page implements HasTable
 
                     // إضافة فاتورة جماعية
                     Action::make('addInvoiceForStatements')
-                        ->label('إضافة فاتورة')
+                        ->label('إضافة فاتورة بيع')
                         ->icon('heroicon-o-document-text')
                         ->schema([
                             Repeater::make('tickets')
@@ -891,7 +898,7 @@ class AccountStatementPage extends Page implements HasTable
                                     foreach ($selectedRecords as $record) {
                                      $ticket = $record->ticket;
 
-                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type','!=', 'refund')->count() == 0) {
+                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0) {
                                       $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
 
                                            $tickets->push([
@@ -952,7 +959,7 @@ class AccountStatementPage extends Page implements HasTable
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
 
                             $invoice = Invoice::create([
-                                'type' => $firstRecord->statementable_type ==  Supplier::class ?  'purchase' :'sale',
+                                'type' => 'sale',
                                 'is_drafted' => false,
                                 'total_taxes' => $totalTaxes,
                                 'total_amount' => $totalAmount,
@@ -979,7 +986,141 @@ class AccountStatementPage extends Page implements HasTable
                         ->color('success')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
-                        ->accessSelectedRecords(),
+                        ->accessSelectedRecords()
+                        ->visible(fn() => $this->activeTab === 'without_invoices'),
+
+
+                    Action::make('addInvoiceForStatements')
+                        ->label('إضافة فاتورة شراء  ')
+                        ->icon('heroicon-o-document-text')
+                        ->schema([
+                            Repeater::make('tickets')
+                                ->label('تفاصيل التذاكر')
+                                ->schema([
+                                    Grid::make(2)
+                                        ->schema([
+                                            TextInput::make('ticket_number_core')
+                                                ->label('رقم التذكرة')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('airline_name')
+                                                ->label('الخطوط الجوية')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('total_taxes')
+                                                ->label('إجمالي الضرائب')
+                                                ->disabled()
+                                                ->dehydrated(),
+
+                                            TextInput::make('sale_total_amount')
+                                                ->label('سعر البيع')
+                                                ->disabled()
+                                                ->dehydrated(),
+                                        ]),
+                                ])
+                                ->default(function ($livewire) {
+                                    $selectedRecords = $livewire->getSelectedTableRecords();
+
+                                    if (empty($selectedRecords)) {
+                                        return [];
+                                    }
+
+                                    $tickets = collect();
+                                    foreach ($selectedRecords as $record) {
+                                     $ticket = $record->ticket;
+
+                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'purchase')->count() == 0) {
+                                      $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+
+                                           $tickets->push([
+                                                'ticket_number_core' => $ticket->ticket_number_core,
+                                                'airline_name' => $ticket->airline_name,
+                                                'total_taxes' => number_format($totalTaxes, 2),
+                                                'sale_total_amount' => number_format($ticket->sale_total_amount, 2),
+                                            ]);
+                                        }
+                                    }
+
+                                    return $tickets->toArray();
+                                })
+                                ->reorderable(false)
+                                ->addable(false)
+                                ->deletable(false)
+                                ->columnSpanFull(),
+
+                            Textarea::make('notes')
+                                ->label('ملاحظات')
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
+                        ])
+                        ->action(function ($records, array $data) {
+                            $firstRecord = $records->first();
+                            if (!$firstRecord) {
+                                Notification::make()
+                                    ->title('لم يتم اختيار أي كشوف حساب')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            $tickets = $records->pluck('ticket')->filter();
+
+                            if ($tickets->isEmpty()) {
+                                Notification::make()
+                                    ->title('لا توجد تذاكر مرتبطة بالكشوف المحددة')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            $ticketsToInvoice = $tickets->where('is_invoiced', false)->where('ticket_type_code','!=','VOID');
+
+                            if ($ticketsToInvoice->isEmpty()) {
+                                Notification::make()
+                                    ->title('جميع التذاكر المحددة عليها فواتير بالفعل')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            $totalTaxes = $ticketsToInvoice->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
+                            $totalAmount = $ticketsToInvoice->sum('sale_total_amount');
+
+                            $lastInvoiceId = Invoice::max('id') ?? 0;
+                            $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
+
+                            $invoice = Invoice::create([
+                                'type' =>'purchase',
+                                'is_drafted' => false,
+                                'total_taxes' => $totalTaxes,
+                                'total_amount' => $totalAmount,
+                                'invoice_number' => $invoiceNumber,
+                                'notes' => $data['notes'] ?? null,
+                                'invoiceable_type' => $firstRecord->statementable_type,
+                                'invoiceable_id' => $firstRecord->statementable_id,
+                            ]);
+
+                            foreach ($ticketsToInvoice as $ticket) {
+                                $invoice->tickets()->attach($ticket->id);
+                                $ticket->update(['is_invoiced' => true]);
+                            }
+
+                            Notification::make()
+                                ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber . ' لـ ' . $ticketsToInvoice->count() . ' تذكرة (تم تجاهل التذاكر المصدرة سابقاً)')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalWidth('4xl')
+                        ->modalHeading('إضافة فاتورة لكشوف الحساب المحددة')
+                        ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->color('info')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords()
+                        ->visible(fn() => $this->activeTab === 'without_invoices'),
 
                     Action::make('addRefundInvoicesForStatements')
                         ->label('إضافة فاتورة استرجاع')
@@ -1110,7 +1251,8 @@ class AccountStatementPage extends Page implements HasTable
                         ->color('danger')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
-                        ->accessSelectedRecords(),
+                        ->accessSelectedRecords()
+                        ->visible(fn() => $this->activeTab === 'without_invoices'),
 
                     // Action::make('addRefundInvoicesForStatements')
                     //     ->label('فاتورة استرجاع')
@@ -1294,13 +1436,81 @@ class AccountStatementPage extends Page implements HasTable
                     //     })
                     //     ->requiresConfirmation()
                     //     ->modalWidth('4xl')
-                    //     ->modalHeading('إنشاء فواتير استرجاع')
+                    //     ->modalHeading('إنشاء فاتورة استرجاع')
                     //     ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
                     //     ->color('danger')
                     //     ->bulk()
                     //     ->deselectRecordsAfterCompletion()
-                    //     ->accessSelectedRecords(),
+                    //     ->accessSelectedRecords()
+                    //     ->visible(fn() => $this->activeTab === 'without_invoices'),
                 ]),
             ]);
+    }
+
+    protected function applyTabFilter(Builder $query): Builder
+    {
+        return match ($this->activeTab) {
+            'without_invoices' => $query->whereDoesntHave('invoices'),
+            'sale_invoices' => $query->whereHas('invoices', fn($q) => $q->where('type', 'sale')),
+            'purchase_invoices' => $query->whereHas('invoices', fn($q) => $q->where('type', 'purchase')),
+            'return_invoices' => $query->whereHas('invoices', fn($q) => $q->where('type', 'refund')),
+            default => $query,
+        };
+    }
+
+    protected function getTabs(): array
+    {
+        $tabs = [];
+
+        $filters = $this->tableFilters['account_filter'] ?? [];
+        $type = $filters['statementable_type'] ?? null;
+        $id = $filters['statementable_id'] ?? null;
+
+        $base = function () use ($type, $id) {
+            $q = AccountStatement::query();
+            if ($type) {
+                $q->where('statementable_type', $type);
+            }
+            if ($id) {
+                $q->where('statementable_id', $id);
+            }
+            return $q;
+        };
+
+        $makeBadge = function (callable $scoper) use ($base) {
+            $q = $base();
+            $scoper($q);
+            $count = $q->count();
+            return $count ?: null;
+        };
+
+        // Always include without invoices
+        $tabs['without_invoices'] = Tab::make('كشف حساب بدون فواتير')
+            ->badge(fn() => $makeBadge(fn($q) => $q->whereDoesntHave('invoices')));
+
+        if (!$type) {
+            // No filter: show all tabs
+            $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))));
+            $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))));
+            $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))));
+            return $tabs;
+        }
+
+        if ($type === Supplier::class) {
+            // Supplier: without + purchase only
+            $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))));
+        } else {
+            // Client/Branch/Franchise: without + sale + refund
+            $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))));
+            $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))));
+        }
+
+        return $tabs;
     }
 }

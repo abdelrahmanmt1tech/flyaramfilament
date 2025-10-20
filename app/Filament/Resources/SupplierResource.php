@@ -127,6 +127,16 @@ class SupplierResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                    Action::make('tickets')
+        ->label('التذاكر')
+        ->icon('heroicon-o-ticket')
+        ->color('primary')
+          ->url(fn($record) => \App\Filament\Pages\UniversalTicketsPage::getUrl([
+                        'type' => 'supplier',
+                        'id' => $record->id
+                    ]))
+                    ->openUrlInNewTab(false),
+
                 Action::make('statement')
                 ->label('كشف الحساب')
                 ->icon('heroicon-o-document-text')
@@ -145,13 +155,13 @@ class SupplierResource extends Resource
 
                 ->openUrlInNewTab(),
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->visible(fn ($record) => $record->id !== 1),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    // DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                 ]),

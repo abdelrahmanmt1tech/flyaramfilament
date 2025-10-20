@@ -43,13 +43,18 @@ class ReservationForm
                     ->readOnly(),
 
 
-                // ربط مع تذكرة (اختياري)
-                Select::make('ticket_id')
-                    ->label('التذكرة')
-                    ->relationship('ticket', 'ticket_number_core')
-                    ->searchable()
-                    ->preload()
-                    ->native(false),
+            Select::make('ticket_id')
+    ->label('التذكرة')
+    ->options(
+        \App\Models\Ticket::query()
+            ->whereNotNull('ticket_number_full')
+            ->get()
+            ->mapWithKeys(fn($t) => [$t->id => $t->ticket_number_full ?: 'بدون رقم'])
+            ->toArray()
+    )
+    ->searchable()
+    ->preload()
+    ->native(false),
 
                 // المسافر على مستوى الحجز
                 Select::make('passenger_id')

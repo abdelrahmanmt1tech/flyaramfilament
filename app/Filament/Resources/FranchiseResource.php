@@ -132,6 +132,16 @@ class FranchiseResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                    Action::make('tickets')
+        ->label('التذاكر')
+        ->icon('heroicon-o-ticket')
+        ->color('primary')
+          ->url(fn($record) => \App\Filament\Pages\UniversalTicketsPage::getUrl([
+                        'type' => 'franchise',
+                        'id' => $record->id
+                    ]))
+                    ->openUrlInNewTab(false),
+
                 Action::make('statement')
                 ->label('كشف الحساب')
                 ->icon('heroicon-o-document-text')

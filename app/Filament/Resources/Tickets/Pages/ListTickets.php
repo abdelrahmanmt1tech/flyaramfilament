@@ -24,7 +24,7 @@ class ListTickets extends ListRecords
                 ->label("بدون توزيع")
                 ->modifyQueryUsing(fn (Builder $query) =>
                 $query
-                    ->whereNull('supplier_id')
+                    // ->whereNull('supplier_id')
                     ->whereNull('client_id')
                     ->whereNull('branch_id')
                     ->whereNull('franchise_id')
@@ -36,12 +36,28 @@ class ListTickets extends ListRecords
                 $query
                     ->where(function (Builder $query) {
 
-                        $query   ->whereNotNull('supplier_id')
-                            ->orWhereNotNull('client_id')
+                        $query 
+                        //   ->whereNotNull('supplier_id')
+                            ->whereNotNull('client_id')
                             ->orWhereNotNull('branch_id')
                             ->orWhereNotNull('franchise_id') ;
 
                     })->where("is_invoiced" ,  false)
+                ),
+
+            'with_invoices' => Tab::make()
+                ->label("موزع  بفواتير")
+                ->modifyQueryUsing(fn (Builder $query) =>
+                $query
+                    ->where(function (Builder $query) {
+
+                        $query 
+                        //   ->whereNotNull('supplier_id')
+                            ->whereNotNull('client_id')
+                            ->orWhereNotNull('branch_id')
+                            ->orWhereNotNull('franchise_id') ;
+
+                    })->where("is_invoiced" ,  true)
                 ),
 
 

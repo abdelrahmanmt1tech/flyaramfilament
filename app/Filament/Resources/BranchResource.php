@@ -132,6 +132,17 @@ class BranchResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
+            Action::make('tickets')
+                ->label('التذاكر')
+                ->icon('heroicon-o-ticket')
+                ->color('primary')
+                ->url(fn($record) => \App\Filament\Pages\UniversalTicketsPage::getUrl([
+                                'type' => 'branch',
+                                'id' => $record->id
+                            ]))
+                    ->openUrlInNewTab(false),
+
+
                 Action::make('statement')
                     ->label('كشف الحساب')
                     ->icon('heroicon-o-document-text')
@@ -184,4 +195,12 @@ class BranchResource extends Resource
     {
         return ['name'];
     }
+
+    public static function getTicketsUrl($record): string
+{
+    return \App\Filament\Pages\UniversalTicketsPage::getUrl([
+        'type' => 'branch',
+        'id' => $record->id
+    ]);
+}
 }
