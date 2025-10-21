@@ -184,7 +184,7 @@ class ClientResource extends Resource
                         'type' => 'client',
                         'id' => $record->id
                     ]))
-                    ->openUrlInNewTab(false),
+                    ->openUrlInNewTab(),
 
                 Action::make('statement')
                 ->label('كشف الحساب')

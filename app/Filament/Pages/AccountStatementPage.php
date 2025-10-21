@@ -73,160 +73,159 @@ class AccountStatementPage extends Page implements HasTable
         return Auth::user()->can('account_statement.view');
     }
 
-     // إضافة Header Actions
-     protected function getHeaderActions(): array
-     {
-         return [
-             Action::make('addPayment')
-                 ->label('تسديد / إيداع')
-                 ->icon('heroicon-o-banknotes')
-                 ->color('primary')
-                 ->size('lg')
-                 ->schema([
-                     Grid::make(2)
-                         ->schema([
-                             // النوع (read only)
-                             TextInput::make('statementable_type_display')
-                                 ->label('نوع الجهة')
-                                 ->default(function () {
-                                     $filters = $this->tableFilters['account_filter'] ?? [];
-                                     $type = $filters['statementable_type'] ?? null;
-                                     
-                                     if ($type) {
-                                         return match ($type) {
-                                             Client::class => 'عميل',
-                                             Supplier::class => 'مورد',
-                                             Branch::class => 'فرع',
-                                             Franchise::class => 'فرانشايز',
-                                             default => $type
-                                         };
-                                     }
-                                     return 'لم يتم اختيار نوع';
-                                 })
-                                 ->disabled()
-                                 ->dehydrated()
-                                 ->required(),
- 
-                             // الجهة (read only)
-                             TextInput::make('statementable_name')
-                                 ->label('الجهة')
-                                 ->default(function () {
-                                     $filters = $this->tableFilters['account_filter'] ?? [];
-                                     $type = $filters['statementable_type'] ?? null;
-                                     $id = $filters['statementable_id'] ?? null;
-                                     
-                                     if ($type && $id) {
-                                         return self::getStatementableName($type, $id);
-                                     }
-                                     return 'لم يتم اختيار جهة';
-                                 })
-                                 ->disabled()
-                                 ->dehydrated()
-                                 ->required(),
- 
-                             // طريقة الدفع
-                             Select::make('payment_method')
-                                 ->label('طريقة الدفع')
-                                 ->options([
-                                     'cash' => 'نقدي',
-                                     'bank_transfer' => 'تحويل بنكي',
-                                     'check' => 'شيك',
-                                     'credit_card' => 'بطاقة ائتمان',
-                                 ])
-                                 ->required()
-                                 ->native(false),
- 
-                             // المبلغ
-                             TextInput::make('amount')
-                                 ->label('المبلغ')
-                                 ->numeric()
-                                 ->required()
-                                 ->minValue(0.01)
-                                 ->suffix('SAR'),
- 
-                             // تاريخ الدفع
-                             DatePicker::make('payment_date')
-                                 ->label('تاريخ الدفع')
-                                 ->default(now())
-                                 ->required(),
- 
-                             // الحساب / الخزينة
-                             Select::make('account')
-                                 ->label('الحساب / الخزينة')
-                                 ->options([
-                                     'main_cash' => 'الخزينة الرئيسية',
-                                     'bank_account_1' => 'الحساب البنكي 1',
-                                     'bank_account_2' => 'الحساب البنكي 2',
-                                     'petty_cash' => 'الصندوق الصغير',
-                                 ])
-                                 ->required()
-                                 ->native(false),
- 
-                         ]),
- 
-                     // الملاحظات
-                     Textarea::make('notes')
-                         ->label('ملاحظات')
-                         ->columnSpanFull(),
-                 ])
-                 ->action(function (array $data) {
-                     $filters = $this->tableFilters['account_filter'] ?? [];
-                     $statementableType = $filters['statementable_type'] ?? null;
-                     $statementableId = $filters['statementable_id'] ?? null;
- 
-                     if (!$statementableType || !$statementableId) {
-                         Notification::make()
-                             ->title('خطأ في الإيداع')
-                             ->body('يجب اختيار نوع الجهة والجهة من الفلتر أولاً')
-                             ->danger()
-                             ->send();
-                         return;
-                     }
- 
-                     try {
-                         // إنشاء سجل الدفع
-                         $payment = Payment::create([
-                             'paymentable_type' => $statementableType,
-                             'paymentable_id' => $statementableId,
-                             'payment_method' => $data['payment_method'],
-                             'amount' => $data['amount'],
-                             'payment_date' => $data['payment_date'],
-                             'account' => $data['account'],
-                             'notes' => $data['notes'] ?? null,
-                         ]);
- 
-                         // إنشاء سجل في كشف الحساب
-                         AccountStatement::create([
-                             'statementable_type' => $statementableType,
-                             'statementable_id' => $statementableId,
-                             'date' => $data['payment_date'],
-                             'doc_no' => 'PAY-' . $payment->id,
-                             'debit' =>  $statementableType == Supplier::class ? $data['amount'] : 0, // الإيداع يكون دائن
-                             'credit' => $statementableType == Supplier::class ?  0 : $data['amount'],
-                             'balance' => 0, // سيتم حسابه تلقائياً في الـ boot
-                         ]);
- 
-                         Notification::make()
-                             ->title('تمت عملية الإيداع بنجاح')
-                             ->body('تم تسجيل الدفع بمبلغ ' . number_format($data['amount'], 2) . ' SAR للجهة: ' . self::getStatementableName($statementableType, $statementableId))
-                             ->success()
-                             ->send();
- 
-                     } catch (\Exception $e) {
-                         Notification::make()
-                             ->title('خطأ في عملية الإيداع')
-                             ->body($e->getMessage())
-                             ->danger()
-                             ->send();
-                     }
-                 })
-                 ->requiresConfirmation()
-                 ->modalHeading('تسديد / إيداع')
-                 ->modalSubmitActionLabel('تأكيد الإيداع')
-                 ->modalWidth('2xl')
-                 ->visible(fn() => !empty($this->tableFilters['account_filter']['statementable_type']) && !empty($this->tableFilters['account_filter']['statementable_id'])),
-         ];
-     }
+    // إضافة Header Actions
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('addPayment')
+                ->label('تسديد / إيداع')
+                ->icon('heroicon-o-banknotes')
+                ->color('primary')
+                ->size('lg')
+                ->schema([
+                    Grid::make(2)
+                        ->schema([
+                            // النوع (read only)
+                            TextInput::make('statementable_type_display')
+                                ->label('نوع الجهة')
+                                ->default(function () {
+                                    $filters = $this->tableFilters['account_filter'] ?? [];
+                                    $type = $filters['statementable_type'] ?? null;
+
+                                    if ($type) {
+                                        return match ($type) {
+                                            Client::class => 'عميل',
+                                            Supplier::class => 'مورد',
+                                            Branch::class => 'فرع',
+                                            Franchise::class => 'فرانشايز',
+                                            default => $type
+                                        };
+                                    }
+                                    return 'لم يتم اختيار نوع';
+                                })
+                                ->disabled()
+                                ->dehydrated()
+                                ->required(),
+
+                            // الجهة (read only)
+                            TextInput::make('statementable_name')
+                                ->label('الجهة')
+                                ->default(function () {
+                                    $filters = $this->tableFilters['account_filter'] ?? [];
+                                    $type = $filters['statementable_type'] ?? null;
+                                    $id = $filters['statementable_id'] ?? null;
+
+                                    if ($type && $id) {
+                                        return self::getStatementableName($type, $id);
+                                    }
+                                    return 'لم يتم اختيار جهة';
+                                })
+                                ->disabled()
+                                ->dehydrated()
+                                ->required(),
+
+                            // طريقة الدفع
+                            Select::make('payment_method')
+                                ->label('طريقة الدفع')
+                                ->options([
+                                    'cash' => 'نقدي',
+                                    'bank_transfer' => 'تحويل بنكي',
+                                    'check' => 'شيك',
+                                    'credit_card' => 'بطاقة ائتمان',
+                                ])
+                                ->required()
+                                ->native(false),
+
+                            // المبلغ
+                            TextInput::make('amount')
+                                ->label('المبلغ')
+                                ->numeric()
+                                ->required()
+                                ->minValue(0.01)
+                                ->suffix('SAR'),
+
+                            // تاريخ الدفع
+                            DatePicker::make('payment_date')
+                                ->label('تاريخ الدفع')
+                                ->default(now())
+                                ->required(),
+
+                            // الحساب / الخزينة
+                            Select::make('account')
+                                ->label('الحساب / الخزينة')
+                                ->options([
+                                    'main_cash' => 'الخزينة الرئيسية',
+                                    'bank_account_1' => 'الحساب البنكي 1',
+                                    'bank_account_2' => 'الحساب البنكي 2',
+                                    'petty_cash' => 'الصندوق الصغير',
+                                ])
+                                ->required()
+                                ->native(false),
+
+                        ]),
+
+                    // الملاحظات
+                    Textarea::make('notes')
+                        ->label('ملاحظات')
+                        ->columnSpanFull(),
+                ])
+                ->action(function (array $data) {
+                    $filters = $this->tableFilters['account_filter'] ?? [];
+                    $statementableType = $filters['statementable_type'] ?? null;
+                    $statementableId = $filters['statementable_id'] ?? null;
+
+                    if (!$statementableType || !$statementableId) {
+                        Notification::make()
+                            ->title('خطأ في الإيداع')
+                            ->body('يجب اختيار نوع الجهة والجهة من الفلتر أولاً')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    try {
+                        // إنشاء سجل الدفع
+                        $payment = Payment::create([
+                            'paymentable_type' => $statementableType,
+                            'paymentable_id' => $statementableId,
+                            'payment_method' => $data['payment_method'],
+                            'amount' => $data['amount'],
+                            'payment_date' => $data['payment_date'],
+                            'account' => $data['account'],
+                            'notes' => $data['notes'] ?? null,
+                        ]);
+
+                        // إنشاء سجل في كشف الحساب
+                        AccountStatement::create([
+                            'statementable_type' => $statementableType,
+                            'statementable_id' => $statementableId,
+                            'date' => $data['payment_date'],
+                            'doc_no' => 'PAY-' . $payment->id,
+                            'debit' =>  $statementableType == Supplier::class ? $data['amount'] : 0, // الإيداع يكون دائن
+                            'credit' => $statementableType == Supplier::class ?  0 : $data['amount'],
+                            'balance' => 0, // سيتم حسابه تلقائياً في الـ boot
+                        ]);
+
+                        Notification::make()
+                            ->title('تمت عملية الإيداع بنجاح')
+                            ->body('تم تسجيل الدفع بمبلغ ' . number_format($data['amount'], 2) . ' SAR للجهة: ' . self::getStatementableName($statementableType, $statementableId))
+                            ->success()
+                            ->send();
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->title('خطأ في عملية الإيداع')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                })
+                ->requiresConfirmation()
+                ->modalHeading('تسديد / إيداع')
+                ->modalSubmitActionLabel('تأكيد الإيداع')
+                ->modalWidth('2xl')
+                ->visible(fn() => !empty($this->tableFilters['account_filter']['statementable_type']) && !empty($this->tableFilters['account_filter']['statementable_id'])),
+        ];
+    }
 
     private static function getStatementableName($type, $id): string
     {
@@ -335,11 +334,11 @@ class AccountStatementPage extends Page implements HasTable
                 //         if ($record->type === 'refund') {
                 //             return 'مسترجعة';
                 //         }
-                        
+
                 //         if ($record->type === 'sale') {
                 //             return $record->invoices()->exists() ? 'مفوترة' : 'غير مفوترة';
                 //         }
-                        
+
                 //         return null;
                 //     })
                 //     ->colors([
@@ -550,19 +549,19 @@ class AccountStatementPage extends Page implements HasTable
                     ->icon('heroicon-o-eye')
                     ->color('success')
                     ->visible(function ($record) {
-                        if($record->type == 'sale'){
-                        if ($record->reservation_id) {
-                            return Invoice::where('reservation_id', $record->reservation_id)
-                                ->where('type', '!=', 'refund')
-                                ->exists();
-                        }
-                        return $record->saleInvoice()->exists();
+                        if ($record->type == 'sale') {
+                            if ($record->reservation_id) {
+                                return Invoice::where('reservation_id', $record->reservation_id)
+                                    ->where('type', 'sale')
+                                    ->exists();
+                            }
+                            return $record->saleInvoice()->exists();
                         }
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
                             $slug = Invoice::where('reservation_id', $record->reservation_id)
-                                ->where('type', '!=', 'refund')
+                                ->where('type', 'sale')
                                 ->value('slug');
                             return route('reservations.invoices.print', $slug);
                         }
@@ -574,13 +573,13 @@ class AccountStatementPage extends Page implements HasTable
                     ->icon('heroicon-o-eye')
                     ->color('primary')
                     ->visible(function ($record) {
-                        if($record->type == 'purchase'){
-                        // if ($record->reservation_id) {
-                        //     return Invoice::where('reservation_id', $record->reservation_id)
-                        //         ->where('type', '!=', 'refund')
-                        //         ->exists();
-                        // }
-                        return $record->purchaseInvoice()->exists();
+                        if ($record->type == 'purchase') {
+                            // if ($record->reservation_id) {
+                            //     return Invoice::where('reservation_id', $record->reservation_id)
+                            //         ->where('type', '!=', 'refund')
+                            //         ->exists();
+                            // }
+                            return $record->purchaseInvoice()->exists();
                         }
                     })
                     ->url(function ($record) {
@@ -601,14 +600,13 @@ class AccountStatementPage extends Page implements HasTable
                     ->color('warning')
                     ->visible(function ($record) {
                         if ($record->type == 'refund') {
-                        if ($record->reservation_id) {
-                            return Invoice::where('reservation_id', $record->reservation_id)
-                                ->where('type', 'refund')
-                                ->exists();
+                            if ($record->reservation_id) {
+                                return Invoice::where('reservation_id', $record->reservation_id)
+                                    ->where('type', 'refund')
+                                    ->exists();
+                            }
+                            return $record->refundInvoice()->exists();
                         }
-                        return $record->refundInvoice()->exists();
-
-                    }
                     })
                     ->url(function ($record) {
                         if ($record->reservation_id) {
@@ -846,7 +844,7 @@ class AccountStatementPage extends Page implements HasTable
                 //     ->modalHeading('إنشاء فاتورة استرجاع')
                 //     ->modalSubmitActionLabel('إنشاء فاتورة الاسترجاع'),
 
-                EditAction::make(),
+                // EditAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),
@@ -857,7 +855,7 @@ class AccountStatementPage extends Page implements HasTable
                     DeleteBulkAction::make(),
 
                     // إضافة فاتورة جماعية
-                    Action::make('addInvoiceForStatements')
+                    Action::make('addSaleInvoiceForStatements')
                         ->label('إضافة فاتورة بيع')
                         ->icon('heroicon-o-document-text')
                         ->schema([
@@ -896,12 +894,12 @@ class AccountStatementPage extends Page implements HasTable
 
                                     $tickets = collect();
                                     foreach ($selectedRecords as $record) {
-                                     $ticket = $record->ticket;
+                                        $ticket = $record->ticket;
 
-                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0) {
-                                      $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                                        if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0) {
+                                            $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
 
-                                           $tickets->push([
+                                            $tickets->push([
                                                 'ticket_number_core' => $ticket->ticket_number_core,
                                                 'airline_name' => $ticket->airline_name,
                                                 'total_taxes' => number_format($totalTaxes, 2),
@@ -916,6 +914,7 @@ class AccountStatementPage extends Page implements HasTable
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columnSpanFull(),
+
 
                             Textarea::make('notes')
                                 ->label('ملاحظات')
@@ -942,7 +941,7 @@ class AccountStatementPage extends Page implements HasTable
                                 return;
                             }
 
-                            $ticketsToInvoice = $tickets->where('is_invoiced', false)->where('ticket_type_code','!=','VOID');
+                            $ticketsToInvoice = $tickets->where('is_invoiced', false)->where('ticket_type_code', '!=', 'VOID');
 
                             if ($ticketsToInvoice->isEmpty()) {
                                 Notification::make()
@@ -983,14 +982,31 @@ class AccountStatementPage extends Page implements HasTable
                         ->modalWidth('4xl')
                         ->modalHeading('إضافة فاتورة لكشوف الحساب المحددة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $record) {
+                                $ticket = $record->ticket;
+                                if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('success')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn() => $this->activeTab === 'without_invoices'),
+                        ->visible(fn() => $this->activeTab === 'without_invoices'
+                            && !empty($this->tableFilters['account_filter']['statementable_type'])
+                            && $this->tableFilters['account_filter']['statementable_type'] !== Supplier::class
+                            && !empty($this->tableFilters['account_filter']['statementable_id'])),
 
-
-                    Action::make('addInvoiceForStatements')
+                    Action::make('addPurchaseInvoiceForStatements')
                         ->label('إضافة فاتورة شراء  ')
                         ->icon('heroicon-o-document-text')
                         ->schema([
@@ -1029,12 +1045,12 @@ class AccountStatementPage extends Page implements HasTable
 
                                     $tickets = collect();
                                     foreach ($selectedRecords as $record) {
-                                     $ticket = $record->ticket;
+                                        $ticket = $record->ticket;
 
-                                     if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'purchase')->count() == 0) {
-                                      $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
+                                        if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'purchase')->count() == 0) {
+                                            $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
 
-                                           $tickets->push([
+                                            $tickets->push([
                                                 'ticket_number_core' => $ticket->ticket_number_core,
                                                 'airline_name' => $ticket->airline_name,
                                                 'total_taxes' => number_format($totalTaxes, 2),
@@ -1075,7 +1091,7 @@ class AccountStatementPage extends Page implements HasTable
                                 return;
                             }
 
-                            $ticketsToInvoice = $tickets->where('is_invoiced', false)->where('ticket_type_code','!=','VOID');
+                            $ticketsToInvoice = $tickets->where('is_purchased', false)->where('ticket_type_code', '!=', 'VOID');
 
                             if ($ticketsToInvoice->isEmpty()) {
                                 Notification::make()
@@ -1092,7 +1108,7 @@ class AccountStatementPage extends Page implements HasTable
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
 
                             $invoice = Invoice::create([
-                                'type' =>'purchase',
+                                'type' => 'purchase',
                                 'is_drafted' => false,
                                 'total_taxes' => $totalTaxes,
                                 'total_amount' => $totalAmount,
@@ -1104,7 +1120,7 @@ class AccountStatementPage extends Page implements HasTable
 
                             foreach ($ticketsToInvoice as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
-                                $ticket->update(['is_invoiced' => true]);
+                                $ticket->update(['is_purchased' => true]);
                             }
 
                             Notification::make()
@@ -1116,11 +1132,26 @@ class AccountStatementPage extends Page implements HasTable
                         ->modalWidth('4xl')
                         ->modalHeading('إضافة فاتورة لكشوف الحساب المحددة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $record) {
+                                $ticket = $record->ticket;
+                                if ($ticket && $ticket->ticket_type_code != 'VOID' && $ticket->invoices()->where('type', 'purchase')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('info')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn() => $this->activeTab === 'without_invoices'),
+                        ->visible(fn() => $this->activeTab === 'without_invoices' && $this->tableFilters['account_filter']['statementable_type'] === Supplier::class),
 
                     Action::make('addRefundInvoicesForStatements')
                         ->label('إضافة فاتورة استرجاع')
@@ -1161,7 +1192,7 @@ class AccountStatementPage extends Page implements HasTable
 
                                     $tickets = collect();
                                     foreach ($selectedRecords as $record) {
-                                    $ticket = $record->ticket;
+                                        $ticket = $record->ticket;
 
                                         if ($ticket && $ticket->ticket_type_code == 'VOID' && $ticket->invoices()->where('type', 'refund')->count() == 0) {
                                             $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
@@ -1207,7 +1238,7 @@ class AccountStatementPage extends Page implements HasTable
                                 return;
                             }
 
-                            $ticketsToInvoice = $tickets->where('ticket_type_code','VOID');
+                            $ticketsToInvoice = $tickets->where('is_refunded', false)->where('ticket_type_code', 'VOID');
 
                             if ($ticketsToInvoice->isEmpty()) {
                                 Notification::make()
@@ -1236,7 +1267,7 @@ class AccountStatementPage extends Page implements HasTable
 
                             foreach ($ticketsToInvoice as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
-                                $ticket->update(['is_invoiced' => true]);
+                                $ticket->update(['is_refunded' => true]);
                             }
 
                             Notification::make()
@@ -1248,12 +1279,29 @@ class AccountStatementPage extends Page implements HasTable
                         ->modalWidth('4xl')
                         ->modalHeading('إضافة فاتورة لكشوف الحساب المحددة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $record) {
+                                $ticket = $record->ticket;
+                                if ($ticket && $ticket->ticket_type_code == 'VOID' && $ticket->invoices()->where('type', 'refund')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('danger')
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn() => $this->activeTab === 'without_invoices'),
-
+                        ->visible(fn() => $this->activeTab === 'without_invoices'
+                            && !empty($this->tableFilters['account_filter']['statementable_type'])
+                            && $this->tableFilters['account_filter']['statementable_type'] !== Supplier::class
+                            && !empty($this->tableFilters['account_filter']['statementable_id']))
                     // Action::make('addRefundInvoicesForStatements')
                     //     ->label('فاتورة استرجاع')
                     //     ->icon('heroicon-o-arrow-uturn-left')

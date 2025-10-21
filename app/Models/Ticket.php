@@ -78,6 +78,8 @@ class Ticket extends Model
         'tax_type_id',
         'is_invoiced',
         "sales_rep" ,
+        "is_purchased" ,
+        "is_refunded" ,
 
 
     ];

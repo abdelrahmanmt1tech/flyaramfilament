@@ -140,7 +140,7 @@ class FranchiseResource extends Resource
                         'type' => 'franchise',
                         'id' => $record->id
                     ]))
-                    ->openUrlInNewTab(false),
+                    ->openUrlInNewTab(),
 
                 Action::make('statement')
                 ->label('كشف الحساب')

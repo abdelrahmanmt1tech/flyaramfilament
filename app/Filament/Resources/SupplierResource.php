@@ -135,7 +135,7 @@ class SupplierResource extends Resource
                         'type' => 'supplier',
                         'id' => $record->id
                     ]))
-                    ->openUrlInNewTab(false),
+                    ->openUrlInNewTab(),
 
                 Action::make('statement')
                 ->label('كشف الحساب')

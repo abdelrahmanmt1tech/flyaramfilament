@@ -42,7 +42,7 @@ class ListTickets extends ListRecords
                             ->orWhereNotNull('branch_id')
                             ->orWhereNotNull('franchise_id') ;
 
-                    })->where("is_invoiced" ,  false)
+                    })->where("is_invoiced" ,  false)->where("is_refunded" , false)
                 ),
 
             'with_invoices' => Tab::make()
@@ -57,7 +57,7 @@ class ListTickets extends ListRecords
                             ->orWhereNotNull('branch_id')
                             ->orWhereNotNull('franchise_id') ;
 
-                    })->where("is_invoiced" ,  true)
+                    })->where("is_invoiced" ,  true)->orWhere("is_refunded" , true)
                 ),
 
 

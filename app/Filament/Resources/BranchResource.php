@@ -140,7 +140,7 @@ class BranchResource extends Resource
                                 'type' => 'branch',
                                 'id' => $record->id
                             ]))
-                    ->openUrlInNewTab(false),
+                    ->openUrlInNewTab(),
 
 
                 Action::make('statement')

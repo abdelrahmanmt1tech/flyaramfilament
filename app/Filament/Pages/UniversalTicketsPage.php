@@ -18,6 +18,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Grid;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -33,16 +34,16 @@ class UniversalTicketsPage extends Page implements HasTable
     protected  string $view = 'filament.pages.universal-tickets';
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-ticket';
-    
+
     protected static ?string $navigationLabel = 'تذاكر الكيانات';
-    
+
     protected static ?string $title = 'تذاكر الكيانات';
-    
+
     public static function getNavigationGroup(): ?string
     {
         return 'التذاكر';
     }
-    
+
     protected static ?int $navigationSort = 71;
 
     public ?string $entityType = null;
@@ -80,19 +81,19 @@ class UniversalTicketsPage extends Page implements HasTable
 
         $titles = [
             'branch' => "تذاكر الفرع",
-            'client' => "تذاكر العميل", 
+            'client' => "تذاكر العميل",
             'franchise' => "تذاكر الامتياز",
             'supplier' => "تذاكر المورد",
         ];
 
         $entityName = $this->entity?->name ?? $this->entity?->company_name ?? 'غير معروف';
-        
+
         return ($titles[$this->entityType] ?? 'تذاكر') . " - {$entityName}";
     }
 
     protected function resolveEntity(string $type, int $id): ?Model
     {
-        return match($type) {
+        return match ($type) {
             'branch' => \App\Models\Branch::find($id),
             'client' => \App\Models\Client::find($id),
             'franchise' => \App\Models\Franchise::find($id),
@@ -106,21 +107,21 @@ class UniversalTicketsPage extends Page implements HasTable
         return $table
             ->query(function () {
                 $query = Ticket::query()->with([
-                    'currency', 
-                    'airline', 
-                    'branch', 
-                    'client', 
-                    'franchise', 
+                    'currency',
+                    'airline',
+                    'branch',
+                    'client',
+                    'franchise',
                     'supplier',
                     'invoices'
                 ]);
-                
+
                 if ($this->entityType && $this->entityId) {
                     $query->where("{$this->entityType}_id", $this->entityId);
                 }
 
                 $query = $this->applyTabFilter($query);
-                
+
                 return $query;
             })
             ->columns([
@@ -155,7 +156,7 @@ class UniversalTicketsPage extends Page implements HasTable
                         }
 
                         $invoice = $record->invoices->first();
-                        return match($invoice->type) {
+                        return match ($invoice->type) {
                             'sale' => 'بيع',
                             'purchase' => 'شراء',
                             'refund' => 'استرجاع',
@@ -273,7 +274,7 @@ class UniversalTicketsPage extends Page implements HasTable
                     Action::make('addSaleInvoice')
                         ->label('اضافة فاتورة بيع')
                         ->icon('heroicon-o-document-text')
-                        ->visible(fn() => $this->activeTab === 'without_invoice' && in_array($this->entityType, ['client','branch','franchise']))
+                        ->visible(fn() => $this->activeTab === 'without_invoice' && in_array($this->entityType, ['client', 'branch', 'franchise']))
                         ->schema([
                             Repeater::make('tickets')
                                 ->label('تفاصيل التذاكر')
@@ -288,12 +289,13 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->default(function ($livewire) {
                                     $selectedRecords = $livewire->getSelectedTableRecords();
                                     if (empty($selectedRecords)) return [];
-                                    
-                                    $tickets = $selectedRecords->filter(fn($ticket) => 
-                                        $ticket->ticket_type_code !== 'VOID' && 
-                                        $ticket->invoices()->where('type', 'sale')->count() == 0
+
+                                    $tickets = $selectedRecords->filter(
+                                        fn($ticket) =>
+                                        $ticket->ticket_type_code !== 'VOID' &&
+                                            $ticket->invoices()->where('type', 'sale')->count() == 0
                                     );
-                                    
+
                                     return $tickets->map(function ($ticket) {
                                         $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
                                         return [
@@ -308,7 +310,11 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columnSpanFull(),
-                            Textarea::make('notes')->label('ملاحظات')->columnSpanFull(),
+
+                            Textarea::make('notes')
+                                ->label('ملاحظات')
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
                         ])
                         ->action(function ($records, array $data) {
                             $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
@@ -316,21 +322,21 @@ class UniversalTicketsPage extends Page implements HasTable
                                 Notification::make()->title('كل التذاكر المحددة عليها فواتير بالفعل')->danger()->send();
                                 return;
                             }
-                            
+
                             $totalTaxes = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
                             $totalAmount = $records->sum('sale_total_amount');
                             $lastInvoiceId = Invoice::max('id') ?? 0;
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-                            
+
                             $typeMap = [
                                 'client' => Client::class,
                                 'branch' => Branch::class,
                                 'franchise' => Franchise::class,
                                 'supplier' => Supplier::class,
                             ];
-                            
+
                             $invoiceableType = $typeMap[$this->entityType] ?? null;
-                            
+
                             $invoice = Invoice::create([
                                 'type' => 'sale',
                                 'is_drafted' => false,
@@ -341,11 +347,11 @@ class UniversalTicketsPage extends Page implements HasTable
                                 'invoiceable_type' => $invoiceableType,
                                 'invoiceable_id' => $this->entityId,
                             ]);
-                            
+
                             foreach ($records as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
                             }
-                            
+
                             Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
                             Notification::make()->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)->success()->send();
                         })
@@ -353,6 +359,20 @@ class UniversalTicketsPage extends Page implements HasTable
                         ->modalWidth('4xl')
                         ->modalHeading('إضافة فاتورة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $ticket) {
+                                if ($ticket->ticket_type_code !== 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('success')
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
@@ -376,12 +396,13 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->default(function () {
                                     $selectedRecords = $this->getSelectedTableRecords();
                                     if (empty($selectedRecords)) return [];
-                                    
-                                    $tickets = $selectedRecords->filter(fn($ticket) => 
-                                        $ticket->ticket_type_code === 'VOID' && 
-                                        $ticket->invoices()->where('type', 'refund')->count() == 0
+
+                                    $tickets = $selectedRecords->filter(
+                                        fn($ticket) =>
+                                        $ticket->ticket_type_code === 'VOID' &&
+                                            $ticket->invoices()->where('type', 'refund')->count() == 0
                                     );
-                                    
+
                                     return $tickets->map(function ($ticket) {
                                         $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
                                         return [
@@ -396,7 +417,10 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columnSpanFull(),
-                            Textarea::make('notes')->label('ملاحظات')->columnSpanFull(),
+                            Textarea::make('notes')
+                                ->label('ملاحظات')
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
                         ])
                         ->action(function ($records, array $data) {
                             $records = $records->reject(fn($t) => $t->ticket_type_code !== 'VOID');
@@ -404,24 +428,24 @@ class UniversalTicketsPage extends Page implements HasTable
                                 Notification::make()->title('كل التذاكر المحددة عليها فواتير بالفعل او تذاكر غير مسترجعة')->danger()->send();
                                 return;
                             }
-                            
+
                             $totalTaxes = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
                             $totalAmount = $records->sum('sale_total_amount');
                             $totalProfit = $records->sum('profit_amount');
                             $totalAmount -= $totalProfit;
-                            
+
                             $lastInvoiceId = Invoice::max('id') ?? 0;
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-                            
+
                             $typeMap = [
                                 'client' => Client::class,
                                 'branch' => Branch::class,
                                 'franchise' => Franchise::class,
                                 'supplier' => Supplier::class,
                             ];
-                            
+
                             $invoiceableType = $typeMap[$this->entityType] ?? null;
-                            
+
                             $invoice = Invoice::create([
                                 'type' => 'refund',
                                 'is_drafted' => false,
@@ -432,18 +456,32 @@ class UniversalTicketsPage extends Page implements HasTable
                                 'invoiceable_type' => $invoiceableType,
                                 'invoiceable_id' => $this->entityId,
                             ]);
-                            
+
                             foreach ($records as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
                             }
-                            
-                            Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
+
+                            Ticket::whereIn('id', $records->pluck('id'))->update(['is_refunded' => true]);
                             Notification::make()->title('فواتير الاسترجاع')->body('تم إنشاء فواتير الاسترجاع بنجاح')->success()->send();
                         })
                         ->requiresConfirmation()
                         ->modalWidth('4xl')
                         ->modalHeading('إنشاء فاتورة استرجاع')
                         ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $ticket) {
+                                if ($ticket->ticket_type_code === 'VOID' && $ticket->invoices()->where('type', 'refund')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('danger')
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
@@ -467,12 +505,13 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->default(function () {
                                     $selectedRecords = $this->getSelectedTableRecords();
                                     if (empty($selectedRecords)) return [];
-                                    
-                                    $tickets = $selectedRecords->filter(fn($ticket) => 
-                                        $ticket->ticket_type_code !== 'VOID' && 
-                                        $ticket->invoices()->where('type', 'purchase')->count() == 0
+
+                                    $tickets = $selectedRecords->filter(
+                                        fn($ticket) =>
+                                        $ticket->ticket_type_code !== 'VOID' &&
+                                            $ticket->invoices()->where('type', 'purchase')->count() == 0
                                     );
-                                    
+
                                     return $tickets->map(function ($ticket) {
                                         $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
                                         return [
@@ -487,7 +526,10 @@ class UniversalTicketsPage extends Page implements HasTable
                                 ->addable(false)
                                 ->deletable(false)
                                 ->columnSpanFull(),
-                            Textarea::make('notes')->label('ملاحظات')->columnSpanFull(),
+                            Textarea::make('notes')
+                                ->label('ملاحظات')
+                                ->columnSpanFull()
+                                ->hidden(fn(Get $get) => empty($get('tickets'))),
                         ])
                         ->action(function ($records, array $data) {
                             $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
@@ -495,12 +537,12 @@ class UniversalTicketsPage extends Page implements HasTable
                                 Notification::make()->title('كل التذاكر المحددة عليها فواتير بالفعل')->danger()->send();
                                 return;
                             }
-                            
+
                             $totalTaxes = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
                             $totalAmount = $records->sum('sale_total_amount');
                             $lastInvoiceId = Invoice::max('id') ?? 0;
                             $invoiceNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-                            
+
                             $invoice = Invoice::create([
                                 'type' => 'purchase',
                                 'is_drafted' => false,
@@ -511,22 +553,36 @@ class UniversalTicketsPage extends Page implements HasTable
                                 'invoiceable_type' => Supplier::class,
                                 'invoiceable_id' => $this->entityId,
                             ]);
-                            
+
                             foreach ($records as $ticket) {
                                 $invoice->tickets()->attach($ticket->id);
                             }
-                            
-                            Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
+
+                            Ticket::whereIn('id', $records->pluck('id'))->update(['is_purchased' => true]);
                             Notification::make()->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)->success()->send();
                         })
                         ->requiresConfirmation()
                         ->modalWidth('4xl')
                         ->modalHeading('إضافة فاتورة')
                         ->modalSubmitActionLabel('إنشاء الفاتورة')
+                        ->modalSubmitAction(function ($action) {
+                            // التحقق من وجود تذاكر مؤهلة
+                            $selectedRecords = $this->getSelectedTableRecords();
+
+                            $hasEligibleTickets = false;
+                            foreach ($selectedRecords as $ticket) {
+                                if ($ticket->ticket_type_code !== 'VOID' && $ticket->invoices()->where('type', 'purchase')->count() == 0) {
+                                    $hasEligibleTickets = true;
+                                    break;
+                                }
+                            }
+
+                            return $action->disabled(!$hasEligibleTickets);
+                        })
                         ->color('primary')
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
-                        
+
                     DeleteBulkAction::make(),
                 ]),
             ])
@@ -540,7 +596,7 @@ class UniversalTicketsPage extends Page implements HasTable
             return $query;
         }
 
-        return match($this->activeTab) {
+        return match ($this->activeTab) {
             'without_invoice' => $query->whereDoesntHave('invoices'),
             'sale_invoices' => $query->whereHas('invoices', function ($q) {
                 $q->where('type', 'sale');
