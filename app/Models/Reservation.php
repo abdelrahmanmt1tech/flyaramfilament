@@ -77,5 +77,8 @@ class Reservation extends Model
         return $this->hasMany(AccountStatement::class);
     }
 
-
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

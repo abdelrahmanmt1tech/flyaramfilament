@@ -29,6 +29,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class TicketsTable
 {
@@ -337,6 +338,7 @@ class TicketsTable
                                 $record->save();
                                 $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
                                 $isCredit = $isVoid ? true : false; //لو التذكرة نوعها استرجاع
+                                  Log::info('record', ['isCredit' => $isCredit]);
                                 AccountStatement::logTicket($record, Branch::class, $data['branch_id'], $isCredit , $isVoid ? 'refund' : 'sale');
                             }
                             Notification::make()
@@ -432,41 +434,41 @@ class TicketsTable
 
 
 
-                    // //  ترحيل للمورد
-                    // Action::make('bulkMigrateSupplier')
-                    //     ->label('ترحيل للمورد')
-                    //     ->icon('heroicon-o-truck')
-                    //     ->schema([
+                    //  ترحيل للمورد
+                    Action::make('bulkMigrateSupplier')
+                        ->label('تغيير المورد')
+                        ->icon('heroicon-o-truck')
+                        ->schema([
 
-                    //         Select::make('supplier_id')
-                    //             ->label('اختر المورد')
-                    //             ->options(Supplier::pluck('name', 'id'))
-                    //             ->searchable()
-                    //             ->preload()
-                    //             ->required(),
+                            Select::make('supplier_id')
+                                ->label('اختر المورد')
+                                ->options(Supplier::pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
 
 
-                    //     ])
-                    //     ->action(function ($records, array $data) {
-                    //         foreach ($records as $record) {
-                    //             $record->supplier_id = $data['supplier_id'];
-                    //             $record->save();
-                    //             $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
-                    //             $isCredit =   $isVoid ? false : true;
-                    //             AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], $isCredit , $isVoid ? 'refund' : 'sale');
-                    //         }
-                    //         Notification::make()
-                    //             ->title('تم ترحيل التذاكر لمورد')
-                    //             ->success()
-                    //             ->send();
-                    //     })
-                    //     ->requiresConfirmation()
-                    //     ->modalHeading('ترحيل التذاكر لمورد')
-                    //     ->modalSubmitActionLabel('تنفيذ الترحيل')
-                    //     ->color('warning')
-                    //     ->bulk()
-                    //     ->deselectRecordsAfterCompletion()
-                    //     ->accessSelectedRecords(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            foreach ($records as $record) {
+                                $record->supplier_id = $data['supplier_id'];
+                                $record->save();
+                                $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
+                                $isCredit =   $isVoid ? false : true;
+                                AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], $isCredit , $isVoid ? 'refund' : 'sale');
+                            }
+                            Notification::make()
+                                ->title('تم ترحيل التذاكر لمورد')
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('ترحيل التذاكر لمورد')
+                        ->modalSubmitActionLabel('تنفيذ الترحيل')
+                        ->color('secondary')
+                        ->bulk()
+                        ->deselectRecordsAfterCompletion()
+                        ->accessSelectedRecords(),
 
 
 

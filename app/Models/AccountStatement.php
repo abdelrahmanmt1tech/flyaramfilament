@@ -147,6 +147,19 @@ class AccountStatement extends Model
         );
     }
 
+    public function reservationInvoices()
+{
+    return $this->hasManyThrough(
+        Invoice::class,
+        Reservation::class,
+        'id',            // المفتاح في reservations
+        'reservation_id', // المفتاح في invoices
+        'reservation_id', // المفتاح في account_statements
+        'id'              // المفتاح في reservations
+    );
+}
+
+
 
     public function refundInvoice()
     {

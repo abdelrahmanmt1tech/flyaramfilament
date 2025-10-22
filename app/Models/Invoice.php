@@ -70,7 +70,7 @@ class Invoice extends Model
 
     public function reservation()
     {
-        return $this->belongsTo(Reservation::class);
+        return $this->belongsTo(Reservation::class , 'reservation_id' , 'id');
     }
 
     public function getSecureUrlAttribute()
