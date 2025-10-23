@@ -42,15 +42,15 @@ return new class extends Migration {
             $t->string('office_id')->nullable();           // ULHS22220
             $t->string('created_by_user')->nullable();     // 2202U2AS
 
-    // ربطات اختيارية
-    $t->foreignId('airline_id')->nullable()->constrained('airlines')->nullOnDelete(); // validating airline لو حبيت
-    $t->foreignId('currency_id')->nullable()->constrained('currencies')->nullOnDelete();
-    $t->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
-    $t->foreignId('sales_user_id')->nullable()->constrained('users')->nullOnDelete(); // وكيل/مندوب (User by code)
-    $t->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
-    $t->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
-    $t->foreignId('franchise_id')->nullable()->constrained('franchises')->nullOnDelete();
-    $t->foreignId('tax_type_id')->nullable()->constrained('tax_types')->nullOnDelete();
+            // ربطات اختيارية
+            $t->foreignId('airline_id')->nullable()->constrained('airlines')->nullOnDelete(); // validating airline لو حبيت
+            $t->foreignId('currency_id')->nullable()->constrained('currencies')->nullOnDelete();
+            $t->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
+            $t->foreignId('sales_user_id')->nullable()->constrained('users')->nullOnDelete(); // وكيل/مندوب (User by code)
+            $t->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
+            $t->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
+            $t->foreignId('franchise_id')->nullable()->constrained('franchises')->nullOnDelete();
+            $t->foreignId('tax_type_id')->nullable()->constrained('tax_types')->nullOnDelete();
 
 
             // التسعير (التكلفة)
