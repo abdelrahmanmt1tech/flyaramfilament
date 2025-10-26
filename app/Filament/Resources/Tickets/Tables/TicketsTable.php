@@ -51,10 +51,10 @@ class TicketsTable
                 TextColumn::make('ticket_type_code')
                     ->label(__('dashboard.fields.type_code'))
 
-                ->formatStateUsing(fn($record) =>
-                $record->ticket_type_code . "( $record->ticket_type )"
-                )
-                ,
+                    ->formatStateUsing(
+                        fn($record) =>
+                        $record->ticket_type_code . "( $record->ticket_type )"
+                    ),
                 // ->toggleable(isToggledHiddenByDefault: true)
                 // ->badge(),
 
@@ -95,6 +95,28 @@ class TicketsTable
                     ->label(__('dashboard.fields.internal'))
                     ->boolean()
                     ->sortable(),
+
+                TextColumn::make('assigned_to')
+                    ->label('مرحلة لـ')
+                    ->state(function ($record) {
+                        if ($record->client_id) {
+                            return 'عميل: ' . optional($record->client)->name;
+                        } elseif ($record->branch_id) {
+                            return 'فرع: ' . optional($record->branch)->name;
+                        } elseif ($record->franchise_id) {
+                            return 'فرانشايز: ' . optional($record->franchise)->name;
+                        }
+                        return 'غير محدد';
+                    })
+                    ->color(fn($record) => match (true) {
+                        $record->client_id => 'info',
+                        $record->branch_id => 'success',
+                        $record->franchise_id => 'warning',
+                        default => 'gray',
+                    })
+                    ->sortable()
+                    ->searchable(),
+
 
                 TextColumn::make('cost_total_amount')
                     ->label(__('dashboard.fields.cost'))
@@ -226,8 +248,8 @@ class TicketsTable
                     ->icon('heroicon-o-document-text')
                     ->color('success')
                     ->visible(fn($record) => $record->invoices()->where('type', 'sale')->exists())
-                ->url(fn($record) => route('invoices.print', $record->invoices()->where('type', 'sale')->first()->slug))
-                ->openUrlInNewTab(),
+                    ->url(fn($record) => route('invoices.print', $record->invoices()->where('type', 'sale')->first()->slug))
+                    ->openUrlInNewTab(),
 
 
                 // عرض فاتورة الاسترجاع
@@ -349,8 +371,8 @@ class TicketsTable
                                 $record->save();
                                 $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
                                 $isCredit = $isVoid ? true : false; //لو التذكرة نوعها استرجاع
-                                  Log::info('record', ['isCredit' => $isCredit]);
-                                AccountStatement::logTicket($record, Branch::class, $data['branch_id'], $isCredit , $isVoid ? 'refund' : 'sale');
+                                Log::info('record', ['isCredit' => $isCredit]);
+                                AccountStatement::logTicket($record, Branch::class, $data['branch_id'], $isCredit, $isVoid ? 'refund' : 'sale');
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لفرع')
@@ -364,9 +386,10 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn ($livewire) =>
+                        ->visible(
+                            fn($livewire) =>
                             $livewire instanceof \App\Filament\Resources\Tickets\Pages\ListTickets &&
-                            $livewire->activeTab === 'without_users'
+                                $livewire->activeTab === 'without_users'
                         ),
 
                     //  ترحيل للفرانشايز
@@ -387,7 +410,7 @@ class TicketsTable
                                 $record->save();
                                 $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
                                 $isCredit = $isVoid ? true : false;
-                                AccountStatement::logTicket($record, Franchise::class, $data['franchise_id'], $isCredit , $isVoid ? 'refund' : 'sale');
+                                AccountStatement::logTicket($record, Franchise::class, $data['franchise_id'], $isCredit, $isVoid ? 'refund' : 'sale');
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لفرانشايز')
@@ -401,9 +424,10 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn ($livewire) =>
+                        ->visible(
+                            fn($livewire) =>
                             $livewire instanceof \App\Filament\Resources\Tickets\Pages\ListTickets &&
-                            $livewire->activeTab === 'without_users'
+                                $livewire->activeTab === 'without_users'
                         ),
 
                     //  ترحيل للعميل
@@ -424,7 +448,7 @@ class TicketsTable
                                 $record->save();
                                 $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
                                 $isCredit = $isVoid ? true : false;
-                                AccountStatement::logTicket($record, Client::class, $data['client_id'], $isCredit , $isVoid ? 'refund' : 'sale');
+                                AccountStatement::logTicket($record, Client::class, $data['client_id'], $isCredit, $isVoid ? 'refund' : 'sale');
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لعميل')
@@ -438,9 +462,10 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords()
-                        ->visible(fn ($livewire) =>
+                        ->visible(
+                            fn($livewire) =>
                             $livewire instanceof \App\Filament\Resources\Tickets\Pages\ListTickets &&
-                            $livewire->activeTab === 'without_users'
+                                $livewire->activeTab === 'without_users'
                         ),
 
 
@@ -466,7 +491,7 @@ class TicketsTable
                                 $record->save();
                                 $isVoid = $record->ticket_type_code == 'VOID' ? true : false;
                                 $isCredit =   $isVoid ? false : true;
-                                AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], $isCredit , $isVoid ? 'refund' : 'sale');
+                                AccountStatement::logTicket($record, Supplier::class, $data['supplier_id'], $isCredit, $isVoid ? 'refund' : 'sale');
                             }
                             Notification::make()
                                 ->title('تم ترحيل التذاكر لمورد')
