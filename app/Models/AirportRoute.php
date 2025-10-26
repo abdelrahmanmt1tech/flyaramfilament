@@ -10,7 +10,9 @@ class AirportRoute extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'origin_airport_id', 'destination_airport_id', 'display_name'
+        'origin_airport_id',
+        'destination_airport_id',
+        'display_name'
     ];
 
     public function origin(){ return $this->belongsTo(Airport::class, 'origin_airport_id'); }

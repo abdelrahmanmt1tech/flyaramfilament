@@ -42,9 +42,11 @@ class TicketForm
                 DatePicker::make('booking_date')->label(__('dashboard.fields.booking_date')),
 
 
-                TextInput::make('ticket_type')
-                    ->label(__('dashboard.fields.ticket_type')),
-                TextInput::make('ticket_type_code')->label(__('dashboard.fields.ticket_type_code')),
+//                TextInput::make('ticket_type')
+//                    ->label(__('dashboard.fields.ticket_type')),
+
+
+//                TextInput::make('ticket_type_code')->label(__('dashboard.fields.ticket_type_code')),
 
 
                 TextInput::make('trip_type')->label(__('dashboard.fields.trip_type')),
@@ -73,9 +75,12 @@ class TicketForm
 
             ]),
             Section::make(__('dashboard.fields.costs_and_relations'))->schema([
+
+
                 TextInput::make('cost_base_amount')
                     ->numeric()
                     ->lazy()
+//                    ->visible(fn($record) => isset($record) && $record->cost_base_amount > 0)
                     ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('cost_total_amount', ($state ?? 0) + ($get('cost_tax_amount') ?? 0))
                         + $set('sale_total_amount',
                             (($state ?? 0) + ($get('cost_tax_amount') ?? 0)) + // cost_total_amount الجديد
@@ -89,6 +94,7 @@ class TicketForm
                 TextInput::make('cost_tax_amount')
                     ->numeric()
                     ->lazy()
+                    ->visible(fn($record) => isset($record) && $record->cost_tax_amount > 0)
                     ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('cost_total_amount', ($get('cost_base_amount') ?? 0) + ($state ?? 0))
                         + $set('sale_total_amount',
                             (($get('cost_base_amount') ?? 0) + ($state ?? 0)) + // cost_total_amount الجديد
@@ -131,6 +137,7 @@ class TicketForm
 
                 TextInput::make('extra_tax_amount')
                     ->numeric()
+                    ->visible(fn($record) => isset($record) && $record->extra_tax_amount > 0)
                     ->lazy()
                     ->afterStateUpdated(fn($state, callable $set, callable $get) => $set('sale_total_amount',
                         ($get('cost_total_amount') ?? 0) +
@@ -150,6 +157,7 @@ class TicketForm
                 // TextInput::make('price_taxes_breakdown')->label(__('dashboard.fields.price_taxes_breakdown')),
 
                 Section::make('العلاقات')->schema([
+
                     Select::make('airline_id')
                         ->label(__('dashboard.fields.airline_name'))
                         ->relationship('airline', 'name')

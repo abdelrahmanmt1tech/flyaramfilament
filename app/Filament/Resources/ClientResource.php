@@ -46,6 +46,11 @@ class ClientResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
 
+
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
+
+
+
     public static function getNavigationLabel(): string
     {
         return __('dashboard.sidebar.clients');
@@ -70,7 +75,7 @@ class ClientResource extends Resource
     {
         return Auth::user()->can('clients.delete');
     }
-    
+
     public static function form(Schema $schema): Schema
     {
         return $schema

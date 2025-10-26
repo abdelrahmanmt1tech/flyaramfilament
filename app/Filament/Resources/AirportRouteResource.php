@@ -26,6 +26,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AirportRouteResource extends Resource
 {
+
+    protected static string | \UnitEnum | null $navigationGroup = "قوائم تشغيليه" ;
+
+
+
     protected static ?string $model = AirportRoute::class;
 
     protected static ?string $slug = 'airport-routes';
@@ -39,10 +44,16 @@ class AirportRouteResource extends Resource
         return __('dashboard.sidebar.airport_routes');
     }
 
-    public static function canAccess(): bool
-    {
-        return false;
-    }
+//    public static function canAccess(): bool
+//    {
+//        return false;
+//    }
+
+public static function canCreate(): bool
+{
+    return false;
+}
+
 
     public static function form(Schema $schema): Schema
     {
@@ -65,11 +76,16 @@ class AirportRouteResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('origin_airport_id'),
+                TextColumn::make('origin.name'),
+                TextColumn::make('destination.name'),
+                TextColumn::make('display_name'),
+
             ])
             ->filters([
                 TrashedFilter::make(),
             ])
+
+                /*
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
@@ -82,15 +98,17 @@ class AirportRouteResource extends Resource
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            */
+            ;
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListAirportRoutes::route('/'),
-            'create' => Pages\CreateAirportRoute::route('/create'),
-            'edit' => Pages\EditAirportRoute::route('/{record}/edit'),
+//            'create' => Pages\CreateAirportRoute::route('/create'),
+//            'edit' => Pages\EditAirportRoute::route('/{record}/edit'),
         ];
     }
 

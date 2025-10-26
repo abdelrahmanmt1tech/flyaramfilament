@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 class UserResource extends Resource
 {
@@ -43,6 +44,8 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'المسؤولون';
     protected static ?string $modelLabel = 'مسؤول';
 
+
+    protected static string | UnitEnum | null $navigationGroup = "الصلاحيات والمشرفين" ;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
 
     public static function getNavigationLabel(): string
@@ -87,14 +90,22 @@ class UserResource extends Resource
                         Select::make('roles')
                             ->label('الدور')
                             ->relationship('roles', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->native(false),
+//                            ->searchable()
+//                            ->preload()
+//                            ->native(false)
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->name),
+
+
+
+
+                        TextInput::make('iata_code')
+                            ->label('كود المستخدم'),
+
 
                         TextInput::make('password')
                             ->label('كلمة المرور')
                             ->password()
-                            ->confirmed() // validation confirmed
+                            ->confirmed()
                             ->dehydrateStateUsing(fn($state) => !empty($state) ? bcrypt($state) : null)
                             ->dehydrated(fn($state) => filled($state)),
 
@@ -102,6 +113,9 @@ class UserResource extends Resource
                             ->label('تأكيد كلمة المرور')
                             ->password()
                             ->dehydrated(false), // مش بيتخزن في الداتا بيز
+
+
+
                     ]),
                 ]),
 
@@ -110,19 +124,60 @@ class UserResource extends Resource
                     Grid::make(2)->schema([
                         Select::make('branches')
                             ->label('الفروع')
-                            ->relationship('branches', 'name') // auto selected in edit
+                            ->relationship('branches', 'name', fn($query) => $query) // تعديل إن لزم
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->getTranslation('name', app()->getLocale()))
+
                             ->multiple()
                             ->searchable()
                             ->preload()
-                            ->native(false),
+                            ->native(false)
+                            ->createOptionForm([
+
+                                TextInput::make('name.ar')
+                                    ->label(__('dashboard.fields.name_ar'))
+                                    ->suffix("ar")
+                                    ->required(),
+
+                                TextInput::make('name.en')
+                                    ->label(__('dashboard.fields.name_en'))
+                                    ->suffix("en")
+                                    ->required(),
+
+                                TextInput::make('tax_number')
+                                    ->label(__('dashboard.fields.tax_number'))
+                                    ->columnSpanFull(),
+                            ])
+
+                        ,
 
                         Select::make('franchises')
                             ->label('الفرانشايز')
-                            ->relationship('franchises', 'name') // auto selected in edit
+                            ->relationship('franchises', 'name', fn($query) => $query) // تعديل إن لزم
+                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->getTranslation('name', app()->getLocale()))
                             ->multiple()
                             ->searchable()
                             ->preload()
-                            ->native(false),
+                            ->native(false)
+
+                            ->createOptionForm([
+
+                                TextInput::make('name.ar')
+                                    ->label(__('dashboard.fields.name_ar'))
+                                    ->suffix("ar")
+                                    ->required(),
+
+                                TextInput::make('name.en')
+                                    ->label(__('dashboard.fields.name_en'))
+                                    ->suffix("en")
+                                    ->required(),
+
+                                TextInput::make('tax_number')
+                                    ->label(__('dashboard.fields.tax_number'))
+                                    ->columnSpanFull(),
+                            ])
+
+
+
                     ]),
                 ]),
 

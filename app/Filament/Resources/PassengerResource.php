@@ -37,6 +37,7 @@ class PassengerResource extends Resource
     protected static ?string $navigationLabel = "المسافرون";
     protected static ?string $pluralModelLabel = "المسافرون";
     protected static ?string $modelLabel = 'مسافر';
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Users;
 

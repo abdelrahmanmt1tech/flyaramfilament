@@ -169,10 +169,10 @@ class Ticket extends Model
     public function createAccountTax()
     {
         if ($this->is_domestic_flight) {
-      
+
             $internal_tax_percentage = TaxType::where('id', 1)->value('value') ?? 15;
 
-            $internal_tax_value = $this->cost_total_amount * ($internal_tax_percentage / 100); 
+            $internal_tax_value = $this->cost_total_amount * ($internal_tax_percentage / 100);
 
             AccountTax::updateOrCreate(
                 ['ticket_id' => $this->id, 'type' => 'purchase_tax'],
@@ -184,10 +184,11 @@ class Ticket extends Model
                 ]
             );
 
+
            $sale_tax_percentage = TaxType::where('id', 2)->value('value') ?? 15;
 
             $sale_tax_value = max($this->sale_total_amount, $this->cost_total_amount)
-            * ($sale_tax_percentage / 100); 
+            * ($sale_tax_percentage / 100);
 
 
             AccountTax::updateOrCreate(
@@ -200,6 +201,9 @@ class Ticket extends Model
                 ]
             );
         }else{
+
+
+
               AccountTax::updateOrCreate(
                 ['ticket_id' => $this->id, 'type' => 'sales_tax'],
                 [
@@ -209,18 +213,29 @@ class Ticket extends Model
                     'is_returned'    => false,
                 ]
             );
+
+
+
         }
     }
 
 
     protected static function booted()
     {
+
+
         static::saving(function (Ticket $t) {
-            $t->sale_total_amount = ($t->cost_total_amount ?? 0)
-                + ($t->extra_tax_amount ?? 0)
+
+            $price = ($t->cost_total_amount ?? 0);
+            if ($t->is_domestic_flight){
+                $price +=  ($t->extra_tax_amount ?? 0) ;
+            }
+            $t->sale_total_amount = $price
                 + ($t->profit_amount ?? 0)
                 - ($t->discount_amount ?? 0);
         });
+
+
 
         static::saved(function (Ticket $t) {
             $t->createAccountTax();

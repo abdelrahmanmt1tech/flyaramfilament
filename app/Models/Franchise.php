@@ -18,6 +18,16 @@ class Franchise extends Model
         'tax_number',
     ];
 
+
+    protected $casts = [
+        'name' =>"array"
+    ] ;
+
+    protected $appends = ['name_translated'] ;
+    function getNameTranslatedAttribute(){
+        return $this->getTranslation('name', app()->getLocale());
+    }
+
     public function classifications()
     {
         return $this->morphToMany(Classification::class, 'classifiable');
@@ -40,7 +50,7 @@ class Franchise extends Model
     {
         return $this->morphOne(FreeInvoice::class, 'free_invoiceable');
     }
-    
+
     public function payments()
     {
         return $this->morphMany(Payment::class, 'paymentable');

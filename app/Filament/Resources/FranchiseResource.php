@@ -41,6 +41,7 @@ class FranchiseResource extends Resource
     protected static ?string $navigationLabel = "الامتيازات";
     protected static ?string $pluralModelLabel = "الامتيازات";
     protected static ?string $modelLabel = 'امتياز';
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingOffice2;
 

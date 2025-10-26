@@ -21,7 +21,14 @@ class Branch extends Model
         'tax_number',
         'iata_code',
     ];
+    protected $casts = [
+        'name' =>"array"
+    ] ;
 
+    protected $appends = ['name_translated'] ;
+    function getNameTranslatedAttribute(){
+        return $this->getTranslation('name', app()->getLocale());
+    }
     public function classifications()
     {
         return $this->morphToMany(Classification::class, 'classifiable');

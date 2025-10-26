@@ -39,10 +39,18 @@ class UniversalTicketsPage extends Page implements HasTable
 
     protected static ?string $title = 'تذاكر الكيانات';
 
-    public static function getNavigationGroup(): ?string
+    /**
+     * @return bool
+     */
+    public static function isShouldRegisterNavigation(): bool
     {
-        return 'التذاكر';
+        return false ;
     }
+
+//    public static function getNavigationGroup(): ?string
+//    {
+//        return 'التذاكر';
+//    }
 
     protected static ?int $navigationSort = 71;
 

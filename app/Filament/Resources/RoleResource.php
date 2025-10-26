@@ -33,6 +33,7 @@ class RoleResource extends Resource
     protected static ?string $navigationLabel = 'الادوار والصلاحيات';
     protected static ?string $pluralModelLabel = 'الادوار والصلاحيات';
     protected static ?string $modelLabel = 'الدور';
+    protected static string | \UnitEnum | null $navigationGroup = "الصلاحيات والمشرفين" ;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
 
@@ -60,7 +61,7 @@ class RoleResource extends Resource
     {
         return Auth::user()->can('roles.delete');
     }
-    
+
     public static function form(Schema $schema): Schema
     {
         return $schema

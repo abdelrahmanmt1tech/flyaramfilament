@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Reservations\Schemas;
 
+use App\Models\Reservation;
 use Filament\Schemas\Schema;
 use App\Models\Branch;
 use App\Models\Client;
@@ -40,21 +41,22 @@ class ReservationForm
             Section::make('المعلومات الأساسية')->schema([
                 TextInput::make('reservation_number')
                     ->label('رقم الحجز')
-                    ->readOnly(),
+                    ->default(Reservation::generateReservationNumber())
+                    ->required(),
 
 
-            Select::make('ticket_id')
-    ->label('التذكرة')
-    ->options(
-        \App\Models\Ticket::query()
-            ->whereNotNull('ticket_number_full')
-            ->get()
-            ->mapWithKeys(fn($t) => [$t->id => $t->ticket_number_full ?: 'بدون رقم'])
-            ->toArray()
-    )
-    ->searchable()
-    ->preload()
-    ->native(false),
+                Select::make('ticket_id')
+                ->label('التذكرة')
+                ->options(
+                        \App\Models\Ticket::query()
+                        ->whereNotNull('ticket_number_full')
+                        ->get()
+                        ->mapWithKeys(fn($t) => [$t->id => $t->ticket_number_full ?: 'بدون رقم'])
+                        ->toArray()
+                )
+                ->searchable()
+                ->preload()
+                ->native(false),
 
                 // المسافر على مستوى الحجز
                 Select::make('passenger_id')

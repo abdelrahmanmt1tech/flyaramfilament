@@ -38,6 +38,11 @@ class LeadSourceResource extends Resource
     protected static ?string $pluralModelLabel = "مصادر العملاء المحتملين";
     protected static ?string $modelLabel = 'مصدر عميل محتمل';
 
+
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
+
+
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Funnel;
 
     public static function getNavigationLabel(): string

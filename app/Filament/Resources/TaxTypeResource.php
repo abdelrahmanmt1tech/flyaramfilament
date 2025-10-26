@@ -36,6 +36,7 @@ class TaxTypeResource extends Resource
     protected static ?string $navigationLabel = "أنواع الضرائب";
     protected static ?string $pluralModelLabel = "أنواع الضرائب";
     protected static ?string $modelLabel = 'نوع ضريبة';
+    protected static string | \UnitEnum | null $navigationGroup = "قوائم تشغيليه" ;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ReceiptPercent;
 
@@ -98,13 +99,13 @@ class TaxTypeResource extends Resource
             ->recordActions([
                 EditAction::make()
                     ->visible(fn ($record) => $record->id !== 1),
-            
+
                 DeleteAction::make()
                     ->visible(fn ($record) => $record->id !== 1),
-            
+
                 // RestoreAction::make()
                 //     ->visible(fn ($record) => $record->id !== 1),
-            
+
                 // ForceDeleteAction::make()
                 //     ->visible(fn ($record) => $record->id !== 1),
             ])

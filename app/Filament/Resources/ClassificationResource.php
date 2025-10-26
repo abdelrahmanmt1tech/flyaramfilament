@@ -28,6 +28,12 @@ use Illuminate\Support\Facades\Auth;
 
 class ClassificationResource extends Resource
 {
+
+    public static function canAccess(): bool
+    {
+        return false;
+    }
+
     protected static ?string $model = Classification::class;
 
     protected static ?string $slug = 'classifications';
@@ -82,7 +88,7 @@ class ClassificationResource extends Resource
                             ->required(),
                             TextInput::make('type')
                             ->label(__('dashboard.fields.type')),
-        
+
                     ]),
 
 

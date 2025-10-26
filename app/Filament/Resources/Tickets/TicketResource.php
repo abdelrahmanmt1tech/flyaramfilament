@@ -39,11 +39,11 @@ class TicketResource extends Resource
     {
         return __('dashboard.sidebar.tickets');
     }
-        
-    public static function getNavigationGroup(): ?string
-    {
-        return 'التذاكر';
-    }
+
+//    public static function getNavigationGroup(): ?string
+//    {
+//        return 'التذاكر';
+//    }
 
           public static function canViewAny(): bool
     {

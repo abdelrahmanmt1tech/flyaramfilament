@@ -41,6 +41,8 @@ class SupplierResource extends Resource
     protected static ?string $navigationLabel = "الموردون";
     protected static ?string $pluralModelLabel = "الموردون";
     protected static ?string $modelLabel = 'مورد';
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
+
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Truck;
 

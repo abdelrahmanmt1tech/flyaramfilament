@@ -29,6 +29,10 @@ use Illuminate\Support\Facades\Auth;
 
 class AirportResource extends Resource
 {
+
+
+    protected static string | \UnitEnum | null $navigationGroup = "قوائم تشغيليه" ;
+
     protected static ?string $model = Airport::class;
 
     protected static ?string $slug = 'airports';

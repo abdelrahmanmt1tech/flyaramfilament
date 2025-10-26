@@ -64,7 +64,7 @@ class UploadTicket extends Page
     public ?array $data = [];
     public $text_file;
 
-    
+
     public static function getNavigationSort(): ?int
     {
         return 69;
@@ -212,15 +212,8 @@ class UploadTicket extends Page
 
 
 
-                /*
-
-                حدث خطأ أثناء الاستيراد: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'symbol' cannot be null
-                (Connection: mysql, SQL: insert into `currencies`
-                 (`symbol`, `name`, `updated_at`, `created_at`) values (?, {"en":null}, 2025-09-30 07:16:27, 2025-09-30 07:16:27))
 
 
-
-                */
                 Notification::make()
                     ->success()
                     ->title(__('dashboard.upload_ticket.messages.import_success'))
@@ -283,35 +276,15 @@ TRUNCATE `ticket_taxes`;
         */
 
         DB::transaction(function () use ($dto) {
-
-
-
-            // if ($dto->supplier)
-            $supplier =Supplier::firstOrCreate(
-                [ 'name' => 'iata' ],
-                ['name' => 'iata' , 'tax_number' => null ,] );
-
-
             $sales_user_id =  null ;
-
             $branch_id =  null ;
             $branchCode =$dto->issuingOfficeId ?? $dto->pnrBranchCode  ?? $dto->branchCode ;
-            if ($dto->createdByUser ){
+            if ($branchCode ){
                 $branch_id = Branch::where('iata_code' , $branchCode)->first()?->id ;
             }
-
-
-
-
             if ($dto->createdByUser ){
                 $sales_user_id = User::where('iata_code' , $dto->createdByUser)->first()?->id ;
             }
-
-
-
-//salesRep
-
-
             $ticket = Ticket::create([
                 'gds' => $dto->gds,
                 'airline_name' => $dto->airlineName,
@@ -332,21 +305,15 @@ TRUNCATE `ticket_taxes`;
                 'branch_code' => $dto->branchCode,
                 'office_id' => $dto->officeId,
                 'created_by_user' => $dto->createdByUser,
-                'supplier_id' =>  $supplier->id,
+                'supplier_id' => 1,
                 'currency_id' => $dto->price?->baseCurrency ?
                     optional(Currency::firstOrCreate(['symbol' => $dto->price->baseCurrency], ['name' => $dto->price->baseCurrency])->first())->id : null,
                 'cost_base_amount' => $dto->price->baseAmount,
                 'cost_tax_amount' => collect($dto->price->taxes)->sum(fn($t) => (float)$t['amount']),
                 'cost_total_amount' => $dto->price->totalAmount,
                 // profit/discount/extra_tax يضيفهم الأدمن لاحقًا أو ندعهم null
-
-
-
                 'pnr_branch_code' => $dto->pnrBranchCode,
                 'pnr_office_id' => $dto->pnrOfficeId,
-
-
-
                 'issuing_office_id' => $dto->issuingOfficeId,
                 'issuing_carrier' => $dto->issuingCarrier,
                 'sales_rep' => $dto->salesRep,

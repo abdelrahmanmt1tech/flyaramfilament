@@ -40,6 +40,11 @@ class AirlineResource extends Resource
     protected static ?string $pluralModelLabel = "الشركات";
     protected static ?string $modelLabel = 'شركة';
 
+
+    protected static string | \UnitEnum | null $navigationGroup = "قوائم تشغيليه" ;
+
+
+
     public static function canViewAny(): bool
     {
         return Auth::user()->can('airlines.view');

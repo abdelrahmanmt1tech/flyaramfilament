@@ -42,6 +42,8 @@ class BranchResource extends Resource
     protected static ?string $navigationLabel = "الفروع";
     protected static ?string $pluralModelLabel = "الفروع";
     protected static ?string $modelLabel = 'فرع';
+    protected static string | \UnitEnum | null $navigationGroup = "الكيانات" ;
+
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::BuildingStorefront;
 
@@ -75,8 +77,7 @@ class BranchResource extends Resource
         return $schema
             ->components([
                 Section::make(__('dashboard.fields.basic_info'))
-                    ->schema([
-                        Grid::make(2)
+                    ->columns(2)
                             ->schema([
                                 TextInput::make('name.ar')
                                     ->label(__('dashboard.fields.name_ar'))
@@ -87,12 +88,16 @@ class BranchResource extends Resource
                                     ->label(__('dashboard.fields.name_en'))
                                     ->suffix("en")
                                     ->required(),
+
+
+
+                                TextInput::make('iata_code')
+                                    ->label('كود المستخدم'),
+
+                                TextInput::make('tax_number')
+                                    ->label(__('dashboard.fields.tax_number'))
                             ]),
 
-                        TextInput::make('tax_number')
-                            ->label(__('dashboard.fields.tax_number'))
-                            ->columnSpanFull(),
-                    ]),
 
                 Section::make(__('dashboard.fields.contact_info'))
                     ->schema([

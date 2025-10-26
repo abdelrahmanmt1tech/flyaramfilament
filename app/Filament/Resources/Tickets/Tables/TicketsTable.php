@@ -48,10 +48,24 @@ class TicketsTable
                     ->sortable()
                     ->copyable(),
 
+                TextColumn::make('ticket_type_code')
+                    ->label(__('dashboard.fields.type_code'))
+
+                ->formatStateUsing(fn($record) =>
+                $record->ticket_type_code . "( $record->ticket_type )"
+                )
+                ,
+                // ->toggleable(isToggledHiddenByDefault: true)
+                // ->badge(),
+
+
+
+
                 TextColumn::make('gds')
                     ->label(__('dashboard.fields.gds'))
                     ->searchable()
                     ->sortable(),
+
 
                 // Booking Date
                 TextColumn::make('booking_date')
@@ -75,10 +89,7 @@ class TicketsTable
                     ->label(__('dashboard.fields.user_number'))
                     ->sortable(),
 
-                TextColumn::make('ticket_type_code')
-                    ->label(__('dashboard.fields.type_code')),
-                    // ->toggleable(isToggledHiddenByDefault: true)
-                    // ->badge(),
+
 
                 IconColumn::make('is_domestic_flight')
                     ->label(__('dashboard.fields.internal'))
@@ -664,7 +675,7 @@ class TicketsTable
                     //         // $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
                     //         $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
 
-                            
+
                     //         if ($records->isEmpty()) {
                     //             Notification::make()
                     //                 ->title('كل التذاكر المحددة عليها فواتير بالفعل')
@@ -720,7 +731,7 @@ class TicketsTable
 
 
 
-                    // // فواتير استرجاع 
+                    // // فواتير استرجاع
                     // Action::make('bulkRefundInvoices')
                     //     ->label('اضافة فاتورة استرجاع')
                     //     ->icon('heroicon-o-arrow-uturn-left')
@@ -763,7 +774,7 @@ class TicketsTable
 
                     //             return $voidTickets->map(function ($ticket) {
                     //                 $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-                                        
+
                     //                 return [
                     //                     'ticket_number_core' => $ticket->ticket_number_core,
                     //                     'airline_name'       => $ticket->airline_name,
@@ -829,7 +840,7 @@ class TicketsTable
                     //         //     AccountStatement::logTicket($record, $data['statementable_type'], $data['statementable_id'] , !$isSupplier);
                     //         // }
 
-                            
+
                     //         if ($records->isEmpty()) {
                     //             Notification::make()
                     //                 ->title('كل التذاكر المحددة عليها فواتير بالفعل او تذاكر غير مسترجعة' )

@@ -38,6 +38,7 @@ class CurrencyResource extends Resource
     protected static ?string $modelLabel = 'عملة';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::CurrencyDollar;
+    protected static string | \UnitEnum | null $navigationGroup = "قوائم تشغيليه" ;
 
     public static function getNavigationLabel(): string
     {

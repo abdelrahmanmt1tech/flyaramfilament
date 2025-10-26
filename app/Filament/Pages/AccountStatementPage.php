@@ -201,8 +201,8 @@ class AccountStatementPage extends Page implements HasTable
                             'statementable_id' => $statementableId,
                             'date' => $data['payment_date'],
                             'doc_no' => 'PAY-' . $payment->id,
-                            'debit' =>  $statementableType == Supplier::class ? $data['amount'] : 0, // الإيداع يكون دائن
-                            'credit' => $statementableType == Supplier::class ?  0 : $data['amount'],
+                            'debit' => $statementableType == Supplier::class ? $data['amount'] : 0, // الإيداع يكون دائن
+                            'credit' => $statementableType == Supplier::class ? 0 : $data['amount'],
                             'balance' => 0, // سيتم حسابه تلقائياً في الـ boot
                         ]);
 
@@ -254,10 +254,11 @@ class AccountStatementPage extends Page implements HasTable
                     ->date()
                     ->sortable(),
 
-                TextColumn::make('reservation_number/pnr')
+                TextColumn::make('reservation_number_pnr')
                     ->label('رقم الحجز/Pnr')
                     ->getStateUsing(fn($record) => $record->reservation?->reservation_number ?? $record->ticket?->pnr)
-                    ->searchable(),
+                //    ->searchable()
+                ,
 
                 TextColumn::make('doc_no')
                     ->label('رقم المستند')
@@ -306,7 +307,7 @@ class AccountStatementPage extends Page implements HasTable
                         Summarizer::make()
                             ->label('الرصيد الإجمالي')
                             ->using(function ($query) {
-                                $totalDebit  = $query->sum('debit');
+                                $totalDebit = $query->sum('debit');
                                 $totalCredit = $query->sum('credit');
                                 return $totalDebit - $totalCredit;
                             })
@@ -443,9 +444,9 @@ class AccountStatementPage extends Page implements HasTable
                         Select::make('statementable_type')
                             ->label('نوع الجهة')
                             ->options([
-                                Client::class    => 'عميل',
-                                Supplier::class  => 'مورد',
-                                Branch::class    => 'فرع',
+                                Client::class => 'عميل',
+                                Supplier::class => 'مورد',
+                                Branch::class => 'فرع',
                                 Franchise::class => 'فرانشايز',
                             ])
                             ->searchable()
@@ -463,11 +464,11 @@ class AccountStatementPage extends Page implements HasTable
                                 }
 
                                 return match ($type) {
-                                    Client::class    => Client::pluck('name', 'id')->toArray(),
-                                    Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
-                                    Branch::class    => Branch::pluck('name', 'id')->toArray(),
+                                    Client::class => Client::pluck('name', 'id')->toArray(),
+                                    Supplier::class => Supplier::pluck('name', 'id')->toArray(),
+                                    Branch::class => Branch::pluck('name', 'id')->toArray(),
                                     Franchise::class => Franchise::pluck('name', 'id')->toArray(),
-                                    default          => [],
+                                    default => [],
                                 };
                             })
                             ->searchable()
@@ -507,11 +508,11 @@ class AccountStatementPage extends Page implements HasTable
 
                             if ($type) {
                                 $name = match ($type) {
-                                    Client::class    => Client::find($data['statementable_id'])?->name ?? $data['statementable_id'],
-                                    Supplier::class  => Supplier::find($data['statementable_id'])?->name ?? $data['statementable_id'],
-                                    Branch::class    => Branch::find($data['statementable_id'])?->name ?? $data['statementable_id'],
+                                    Client::class => Client::find($data['statementable_id'])?->name ?? $data['statementable_id'],
+                                    Supplier::class => Supplier::find($data['statementable_id'])?->name ?? $data['statementable_id'],
+                                    Branch::class => Branch::find($data['statementable_id'])?->name ?? $data['statementable_id'],
                                     Franchise::class => Franchise::find($data['statementable_id'])?->name ?? $data['statementable_id'],
-                                    default          => $data['statementable_id'],
+                                    default => $data['statementable_id'],
                                 };
                             }
 
@@ -1056,10 +1057,17 @@ class AccountStatementPage extends Page implements HasTable
     protected function applyTabFilter(Builder $query): Builder
     {
         return match ($this->activeTab) {
-            'without_invoices' => $query->whereDoesntHave('invoices')->where(function ($sub) {
-                $sub->whereDoesntHave('reservation.invoices')
-                    ->orWhereDoesntHave('reservation');
-            }),
+            'without_invoices' => $query->whereDoesntHave('invoices')
+                ->when(
+                    empty($this->tableFilters['account_filter']['statementable_id']) ||
+                    $this->tableFilters['account_filter']['statementable_id'] != 1
+                    , function (Builder $query) {
+                    $query->where("statementable_id", '!=', 1);
+                })
+                ->where(function ($sub) {
+                    $sub->whereDoesntHave('reservation.invoices')
+                        ->orWhereDoesntHave('reservation');
+                }),
             'sale_invoices' => $query->where(function ($q) {
                 $q->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))
                     ->orWhereHas('reservationInvoices', fn($qq) => $qq->where('type', 'sale'));
@@ -1076,114 +1084,102 @@ class AccountStatementPage extends Page implements HasTable
         };
     }
 
-  protected function getTabs(): array
-{
-    $tabs = [];
+    protected function getTabs(): array
+    {
+        $tabs = [];
 
-    $filters = $this->tableFilters['account_filter'] ?? [];
-    $type = $filters['statementable_type'] ?? null;
-    $id = $filters['statementable_id'] ?? null;
+        $filters = $this->tableFilters['account_filter'] ?? [];
+        $type = $filters['statementable_type'] ?? null;
+        $id = $filters['statementable_id'] ?? null;
 
-    $base = function () use ($type, $id) {
-        $q = AccountStatement::query();
-        if ($type) {
-            $q->where('statementable_type', $type);
-        }
-        if ($id) {
-            $q->where('statementable_id', $id);
-        }
-        return $q;
-    };
+        $base = function () use ($type, $id) {
+            $q = AccountStatement::query();
+            if ($type) {
+                $q->where('statementable_type', $type);
+            }
+            if ($id) {
+                $q->where('statementable_id', $id);
+            }else{
+                $q->where("statementable_id", '!=', 1);
+            }
+            return $q;
+        };
 
-    $makeBadge = function (callable $scoper) use ($base) {
-        $q = $base();
-        $scoper($q);
-        $count = $q->count();
-        return $count ?: null;
-    };
+        $makeBadge = function (callable $scoper) use ($base) {
+            $q = $base();
+            $scoper($q);
+            $count = $q->count();
+            return $count ?: null;
+        };
 
-    // بدون فواتير
-    $tabs['without_invoices'] = Tab::make('كشف حساب بدون فواتير')
-        ->badge(fn() =>
-            $makeBadge(fn($q) =>
-                $q->whereDoesntHave('invoices')
-                    ->where(function ($sub) {
-                        $sub->whereDoesntHave('reservation.invoices')
-                            ->orWhereDoesntHave('reservation');
-                    })
+        // بدون فواتير
+        $tabs['without_invoices'] = Tab::make('كشف حساب بدون فواتير')
+            ->badge(fn() => $makeBadge(fn($q) => $q->whereDoesntHave('invoices')
+                ->where(function ($sub) {
+                    $sub->whereDoesntHave('reservation.invoices')
+                        ->orWhereDoesntHave('reservation');
+                })
             )
-        );
-
-    // لو مفيش فلتر خاص بالنوع
-    if (!$type) {
-        $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'sale'));
-                    })
-                )
             );
 
-        $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'purchase'));
-                    })
+        // لو مفيش فلتر خاص بالنوع
+        if (!$type) {
+            $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'sale'));
+                })
                 )
-            );
+                );
 
-        $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'refund'));
-                    })
+            $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'purchase'));
+                })
                 )
-            );
+                );
+
+            $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'refund'));
+                })
+                )
+                );
+
+            return $tabs;
+        }
+
+        // الموردين
+        if ($type === Supplier::class) {
+            $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'purchase'));
+                })
+                )
+                );
+        } else {
+            // العملاء / الفروع / الوكلاء
+            $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'sale'));
+                })
+                )
+                );
+
+            $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
+                ->badge(fn() => $makeBadge(fn($q) => $q->where(function ($sub) {
+                    $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))
+                        ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'refund'));
+                })
+                )
+                );
+        }
 
         return $tabs;
     }
-
-    // الموردين
-    if ($type === Supplier::class) {
-        $tabs['purchase_invoices'] = Tab::make('كشف حساب بفواتير شراء')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'purchase'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'purchase'));
-                    })
-                )
-            );
-    } else {
-        // العملاء / الفروع / الوكلاء
-        $tabs['sale_invoices'] = Tab::make('كشف حساب بفواتير بيع')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'sale'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'sale'));
-                    })
-                )
-            );
-
-        $tabs['return_invoices'] = Tab::make('كشف حساب بفواتير استرجاع')
-            ->badge(fn() =>
-                $makeBadge(fn($q) =>
-                    $q->where(function ($sub) {
-                        $sub->whereHas('invoices', fn($qq) => $qq->where('type', 'refund'))
-                            ->orWhereHas('reservation.invoices', fn($qq) => $qq->where('type', 'refund'));
-                    })
-                )
-            );
-    }
-
-    return $tabs;
-}
 
 }
