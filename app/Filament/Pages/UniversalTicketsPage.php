@@ -605,6 +605,7 @@ class UniversalTicketsPage extends Page implements HasTable
         }
 
         return match ($this->activeTab) {
+            'all' => $query,
             'without_invoice' => $query->whereDoesntHave('invoices'),
             'sale_invoices' => $query->whereHas('invoices', function ($q) {
                 $q->where('type', 'sale');
@@ -626,6 +627,9 @@ class UniversalTicketsPage extends Page implements HasTable
         }
 
         $tabs = [];
+
+        $tabs['all'] = Tab::make('الكل')
+        ->badge(fn() => Ticket::query()->where("{$this->entityType}_id", $this->entityId)->count());
 
         $tabs['without_invoice'] = Tab::make('تذاكر بدون فاتورة')
             ->badge(function () {

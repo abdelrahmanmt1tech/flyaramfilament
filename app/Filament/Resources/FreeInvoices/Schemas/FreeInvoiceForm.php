@@ -14,6 +14,7 @@ use App\Models\Client;
 use App\Models\Supplier;
 use App\Models\Branch;
 use App\Models\Franchise;
+use App\Models\TaxType;
 
 class FreeInvoiceForm
 {
@@ -33,7 +34,7 @@ class FreeInvoiceForm
                                     Supplier::class => 'مورد',
                                     Branch::class => 'فرع',
                                     Franchise::class => 'فرانشايز',
-                                    'other' => 'أخرى', 
+                                    'other' => 'أخرى',
                                 ])
                                 ->searchable()
                                 ->native(false)
@@ -142,6 +143,20 @@ class FreeInvoiceForm
                             ->label('تاريخ الاستحقاق')
                             ->required()
                             ->default(today()->addDays(30)),
+                        Select::make('tax_type_id')
+                            ->label('نوع الضريبة')
+                            ->relationship(
+                                name: 'taxType',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn($query) => $query->orderBy('value', 'desc')
+                            )
+                            ->getOptionLabelFromRecordUsing(
+                                fn(TaxType $record) =>
+                                "{$record->name} ({$record->value}%)"
+                            )
+                            // ->searchable()
+                            ->nullable()
+                            ->placeholder('اختر نوع الضريبة'),
 
                         TextInput::make('total')
                             ->label('الإجمالي')

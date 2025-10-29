@@ -1057,6 +1057,7 @@ class AccountStatementPage extends Page implements HasTable
     protected function applyTabFilter(Builder $query): Builder
     {
         return match ($this->activeTab) {
+            'all' => $query, 
             'without_invoices' => $query->whereDoesntHave('invoices')
                 ->when(
                     empty($this->tableFilters['account_filter']['statementable_id']) ||
@@ -1111,6 +1112,9 @@ class AccountStatementPage extends Page implements HasTable
             $count = $q->count();
             return $count ?: null;
         };
+
+          $tabs['all'] = Tab::make('الكل')
+        ->badge(fn() => $makeBadge(fn($q) => $q));
 
         // بدون فواتير
         $tabs['without_invoices'] = Tab::make('كشف حساب بدون فواتير')

@@ -17,6 +17,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -26,6 +27,9 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,7 +74,7 @@ class TicketsTable
                 // Booking Date
                 TextColumn::make('booking_date')
                     ->label(__('dashboard.fields.booking_date_label'))
-                    ->state(fn($record) => ($record?->booking_date || $record?->issue_date))
+                    ->state(fn($record) => $record?->booking_date ?? $record?->issue_date)
                     ->date()
                     ->sortable(),
 
@@ -239,9 +243,136 @@ class TicketsTable
 
 
             ])
+
+            ///////////////////////////////////////////////////////////////////////////////
             ->filters([
-                TrashedFilter::make(),
+                Filter::make('booking_date_range')
+                    ->label('تاريخ الحجز')
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('من تاريخ')
+                            ->placeholder('من تاريخ'),
+                        DatePicker::make('to')
+                            ->label('إلى تاريخ')
+                            ->placeholder('إلى تاريخ'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query
+                            ->when($data['from'], fn($q) => $q->whereDate('booking_date', '>=', $data['from']))
+                            ->when($data['to'], fn($q) => $q->whereDate('booking_date', '<=', $data['to']));
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if (!$data['from'] && !$data['to']) return null;
+                        $indicators = [];
+                        if ($data['from']) $indicators[] = 'من: ' . $data['from'];
+                        if ($data['to']) $indicators[] = 'إلى: ' . $data['to'];
+                        return implode(' - ', $indicators);
+                    }),
+
+                SelectFilter::make('ticket_type_code')
+                    ->label(__('dashboard.fields.type_code'))
+                    ->options(function () {
+                        return Ticket::query()
+                            ->distinct()
+                            ->whereNotNull('ticket_type_code')
+                            ->orderBy('ticket_type_code')
+                            ->pluck('ticket_type_code', 'ticket_type_code')
+                            ->toArray();
+                    })
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('gds')
+                    ->label(__('dashboard.fields.gds'))
+                    ->options(function () {
+                        return Ticket::query()
+                            ->distinct()
+                            ->whereNotNull('gds')
+                            ->orderBy('gds')
+                            ->pluck('gds', 'gds')
+                            ->map(fn($gds) => strtoupper($gds))
+                            ->toArray();
+                    })
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('airline_id')
+                    ->label(__('dashboard.fields.airline_label'))
+                    ->relationship('airline', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                TernaryFilter::make('is_domestic_flight')
+                    ->label('داخلية/خارجية')
+                    ->placeholder('الكل')
+                    ->trueLabel('داخلية')
+                    ->falseLabel('خارجية'),
+
+                Filter::make('assigned_to')
+                    ->label('مرحلة لـ')
+                    ->schema([
+                        Select::make('client_id')
+                            ->label('العميل')
+                            ->relationship('client', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Select::make('branch_id')
+                            ->label('الفرع')
+                            ->relationship('branch', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Select::make('franchise_id')
+                            ->label('الفرانشايز')
+                            ->relationship('franchise', 'name')
+                            ->searchable()
+                            ->preload(),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query
+                            ->when($data['client_id'], fn($q, $id) => $q->where('client_id', $id))
+                            ->when($data['branch_id'], fn($q, $id) => $q->where('branch_id', $id))
+                            ->when($data['franchise_id'], fn($q, $id) => $q->where('franchise_id', $id));
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['client_id']) {
+                            $client = Client::find($data['client_id']);
+                            $indicators[] = 'عميل: ' . ($client?->name ?? 'غير معروف');
+                        }
+                        if ($data['branch_id']) {
+                            $branch = Branch::find($data['branch_id']);
+                            $indicators[] = 'فرع: ' . ($branch?->name ?? 'غير معروف');
+                        }
+                        if ($data['franchise_id']) {
+                            $franchise = Franchise::find($data['franchise_id']);
+                            $indicators[] = 'فرانشايز: ' . ($franchise?->name ?? 'غير معروف');
+                        }
+                        return $indicators;
+                    }),
+
+                SelectFilter::make('supplier_id')
+                    ->label('المورد')
+                    ->relationship('supplier', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('trip_type')
+                    ->label(__('dashboard.fields.type'))
+                    ->options(function () {
+                        return Ticket::query()
+                            ->distinct()
+                            ->whereNotNull('trip_type')
+                            ->orderBy('trip_type')
+                            ->pluck('trip_type', 'trip_type')
+                            ->toArray();
+                    })
+                    ->multiple(),
+
+
             ])
+            ///////////////////////////////////////////////////////////////////////////////
             ->recordActions([
                 Action::make('viewInvoice')
                     ->label('الفاتورة')
@@ -595,332 +726,7 @@ class TicketsTable
                         ->bulk()
                         ->deselectRecordsAfterCompletion()
                         ->accessSelectedRecords(),
-                    // ///////////////////
 
-                    // Action::make('addInvoice')
-                    //     ->label('اضافة فاتورة بيع')
-                    //     ->icon('heroicon-o-document-text')
-                    //     ->schema([
-                    //         Repeater::make('tickets')
-                    //             ->label('تفاصيل التذاكر')
-                    //             ->schema([
-                    //                 Grid::make(2)
-                    //                     ->schema([
-                    //                         TextInput::make('ticket_number_core')
-                    //                             ->label('رقم التذكرة')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('airline_name')
-                    //                             ->label('الخطوط الجوية')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('total_taxes')
-                    //                             ->label('إجمالي الضرائب')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('sale_total_amount')
-                    //                             ->label('سعر البيع')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-                    //                     ]),
-                    //             ])
-                    //       ->default(function ($livewire) {
-                    //         $selectedRecords = $livewire->getSelectedTableRecords();
-
-                    //         if (empty($selectedRecords)) {
-                    //             return [];
-                    //         }
-
-                    //         // فلترة التذاكر بحيث نأخذ فقط اللي نوعها VOID
-                    //         $voidTickets = $selectedRecords->filter(fn($ticket) => $ticket->ticket_type_code !== 'VOID' && $ticket->invoices()->where('type', 'sale')->count() == 0);
-
-                    //         return $voidTickets->map(function ($ticket) {
-                    //             $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-
-                    //             return [
-                    //                 'ticket_number_core' => $ticket->ticket_number_core,
-                    //                 'airline_name'       => $ticket->airline_name,
-                    //                 'total_taxes'        => number_format($totalTaxes, 2),
-                    //                 'sale_total_amount'  => number_format($ticket->sale_total_amount, 2),
-                    //             ];
-                    //         })->toArray();
-                    //     })
-
-                    //             ->reorderable(false)
-                    //             ->addable(false)
-                    //             ->deletable(false)
-                    //             ->columnSpanFull(),
-
-                    //         Select::make('statementable_type')
-                    //             ->label('نوع الجهة')
-                    //             ->options([
-                    //                 Client::class    => 'عميل',
-                    //                 Supplier::class  => 'مورد',
-                    //                 Branch::class    => 'فرع',
-                    //                 Franchise::class => 'فرانشايز',
-                    //             ])
-                    //             ->searchable()
-                    //             ->native(false)
-                    //             ->live()
-                    //             ->required()
-                    //             ->afterStateUpdated(fn($set) => $set('statementable_id', null)),
-
-                    //         Select::make('statementable_id')
-                    //             ->label('الجهة')
-                    //             ->options(function (callable $get) {
-                    //                 $type = $get('statementable_type');
-                    //                 if (!$type) {
-                    //                     return [];
-                    //                 }
-
-                    //                 return match ($type) {
-                    //                     Client::class    => Client::pluck('name', 'id')->toArray(),
-                    //                     Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
-                    //                     Branch::class    => Branch::pluck('name', 'id')->toArray(),
-                    //                     Franchise::class => Franchise::pluck('name', 'id')->toArray(),
-                    //                     default          => [],
-                    //                 };
-                    //             })
-                    //             ->searchable()
-                    //             ->native(false)
-                    //             ->placeholder('اختر الجهة أولاً من نوع الجهة')
-                    //             ->required()
-                    //             ->disabled(fn(callable $get) => !$get('statementable_type')),
-
-                    //         Textarea::make('notes')
-                    //             ->label('ملاحظات')
-                    //             ->columnSpanFull(),
-                    //     ])
-                    //     ->action(function ($records, array $data) {
-
-                    //         // $records = $records->reject(fn($t) => $t->is_invoiced);
-                    //         // $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
-                    //         $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
-
-
-                    //         if ($records->isEmpty()) {
-                    //             Notification::make()
-                    //                 ->title('كل التذاكر المحددة عليها فواتير بالفعل')
-                    //                 ->danger()
-                    //                 ->send();
-                    //             return;
-                    //         }
-
-
-                    //         $totalTaxes  = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
-                    //         $totalAmount = $records->sum('sale_total_amount');
-
-
-                    //         $lastInvoiceId   = Invoice::max('id') ?? 0;
-                    //         $invoiceNumber   = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-
-
-                    //         $invoice = Invoice::create([
-                    //             'type'          => $data['statementable_type'] ==  Supplier::class ?  'purchase' :'sale',
-                    //             'is_drafted'    => false,
-                    //             'total_taxes'   => $totalTaxes,
-                    //             'total_amount'  => $totalAmount,
-                    //             'invoice_number' => $invoiceNumber,
-                    //             'notes'         => $data['notes'] ?? null,
-                    //             'invoiceable_type' => $data['statementable_type'],
-                    //             'invoiceable_id' => $data['statementable_id'],
-                    //         ]);
-
-
-                    //         foreach ($records as $ticket) {
-                    //             $invoice->tickets()->attach($ticket->id);
-                    //         }
-
-                    //         Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
-
-                    //         Notification::make()
-                    //             ->title('تم إنشاء الفاتورة رقم ' . $invoiceNumber)
-                    //             ->success()
-                    //             ->send();
-                    //     })
-                    //     ->requiresConfirmation()
-                    //     ->modalWidth('4xl')
-                    //     ->modalHeading('إضافة فاتورة')
-                    //     ->modalSubmitActionLabel('إنشاء الفاتورة')
-                    //     ->color('success')
-                    //     ->bulk()
-                    //     ->deselectRecordsAfterCompletion()
-                    //     ->accessSelectedRecords()
-                    //      ->visible(fn ($livewire) =>
-                    //         $livewire instanceof \App\Filament\Resources\Tickets\Pages\ListTickets &&
-                    //         $livewire->activeTab === 'without_invoices'
-                    //     ),
-
-
-
-                    // // فواتير استرجاع
-                    // Action::make('bulkRefundInvoices')
-                    //     ->label('اضافة فاتورة استرجاع')
-                    //     ->icon('heroicon-o-arrow-uturn-left')
-                    //     ->schema([
-                    //             Repeater::make('tickets')
-                    //             ->label('تفاصيل التذاكر')
-                    //             ->schema([
-                    //                 Grid::make(2)
-                    //                     ->schema([
-                    //                         TextInput::make('ticket_number_core')
-                    //                             ->label('رقم التذكرة')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('airline_name')
-                    //                             ->label('الخطوط الجوية')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('total_taxes')
-                    //                             ->label('إجمالي الضرائب')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-
-                    //                         TextInput::make('sale_total_amount')
-                    //                             ->label('سعر البيع')
-                    //                             ->disabled()
-                    //                             ->dehydrated(),
-                    //                     ]),
-                    //             ])
-                    //     ->default(function ($livewire) {
-                    //             $selectedRecords = $livewire->getSelectedTableRecords();
-
-                    //             if (empty($selectedRecords)) {
-                    //                 return [];
-                    //             }
-
-                    //             // فلترة التذاكر بحيث نأخذ فقط اللي نوعها VOID
-                    //             $voidTickets = $selectedRecords->filter(fn($ticket) => $ticket->ticket_type_code === 'VOID' && $ticket->invoices()->where('type', 'refund')->count() == 0);
-
-                    //             return $voidTickets->map(function ($ticket) {
-                    //                 $totalTaxes = ($ticket->cost_tax_amount ?? 0) + ($ticket->extra_tax_amount ?? 0);
-
-                    //                 return [
-                    //                     'ticket_number_core' => $ticket->ticket_number_core,
-                    //                     'airline_name'       => $ticket->airline_name,
-                    //                     'total_taxes'        => number_format($totalTaxes, 2),
-                    //                     'sale_total_amount'  => number_format($ticket->sale_total_amount, 2),
-                    //                 ];
-                    //             })->toArray();
-                    //         })
-
-                    //             ->reorderable(false)
-                    //             ->addable(false)
-                    //             ->deletable(false)
-                    //             ->columnSpanFull(),
-
-                    //         Select::make('statementable_type')
-                    //             ->label('نوع الجهة')
-                    //             ->options([
-                    //                 Client::class    => 'عميل',
-                    //                 Supplier::class  => 'مورد',
-                    //                 Branch::class    => 'فرع',
-                    //                 Franchise::class => 'فرانشايز',
-                    //             ])
-                    //             ->searchable()
-                    //             ->native(false)
-                    //             ->live()
-                    //             ->required()
-                    //             ->afterStateUpdated(fn($set) => $set('statementable_id', null)),
-
-                    //         Select::make('statementable_id')
-                    //             ->label('الجهة')
-                    //             ->options(function (callable $get) {
-                    //                 $type = $get('statementable_type');
-                    //                 if (!$type) {
-                    //                     return [];
-                    //                 }
-
-                    //                 return match ($type) {
-                    //                     Client::class    => Client::pluck('name', 'id')->toArray(),
-                    //                     Supplier::class  => Supplier::pluck('name', 'id')->toArray(),
-                    //                     Branch::class    => Branch::pluck('name', 'id')->toArray(),
-                    //                     Franchise::class => Franchise::pluck('name', 'id')->toArray(),
-                    //                     default          => [],
-                    //                 };
-                    //             })
-                    //             ->searchable()
-                    //             ->native(false)
-                    //             ->placeholder('اختر الجهة أولاً من نوع الجهة')
-                    //             ->required()
-                    //             ->disabled(fn(callable $get) => !$get('statementable_type')),
-
-                    //         Textarea::make('notes')
-                    //             ->label('ملاحظات')
-                    //             ->columnSpanFull(),
-                    //     ])
-                    //     ->action(function ($records, array $data) {
-
-                    //         // $records = $records->reject(fn($t) => $t->is_invoiced);
-                    //         // $records = $records->reject(fn($t) => $t->ticket_type_code == 'VOID');
-                    //         $records = $records->reject(fn($t) =>  $t->ticket_type_code !== 'VOID');
-
-                    //         // foreach ($records as $record) {
-                    //         //    $isSupplier = $data['statementable_type'] == Supplier::class; //عشان دي استرجاع ف المدين هيكون
-                    //         //     AccountStatement::logTicket($record, $data['statementable_type'], $data['statementable_id'] , !$isSupplier);
-                    //         // }
-
-
-                    //         if ($records->isEmpty()) {
-                    //             Notification::make()
-                    //                 ->title('كل التذاكر المحددة عليها فواتير بالفعل او تذاكر غير مسترجعة' )
-                    //                 ->danger()
-                    //                 ->send();
-                    //             return;
-                    //         }
-
-
-                    //         $totalTaxes  = $records->sum(fn($t) => ($t->cost_tax_amount ?? 0) + ($t->extra_tax_amount ?? 0));
-                    //         $totalAmount = $records->sum('sale_total_amount');
-                    //         $totalProfit  = $records->sum('profit_amount');
-                    //          $totalAmount -= $totalProfit;
-
-
-                    //         $lastInvoiceId   = Invoice::max('id') ?? 0;
-                    //         $invoiceNumber   = 'INV-' . now()->format('Y') . '-' . str_pad($lastInvoiceId + 1, 5, '0', STR_PAD_LEFT);
-
-
-                    //         $invoice = Invoice::create([
-                    //             'type'          => 'refund',
-                    //             'is_drafted'    => false,
-                    //             'total_taxes'   => $totalTaxes,
-                    //             'total_amount'  => $totalAmount,
-                    //             'invoice_number' => $invoiceNumber,
-                    //             'notes'         => $data['notes'] ?? null,
-                    //             'invoiceable_type' => $data['statementable_type'],
-                    //             'invoiceable_id' => $data['statementable_id'],
-                    //         ]);
-
-
-                    //         foreach ($records as $ticket) {
-                    //             $invoice->tickets()->attach($ticket->id);
-                    //         }
-
-                    //         Ticket::whereIn('id', $records->pluck('id'))->update(['is_invoiced' => true]);
-
-                    //         Notification::make()
-                    //             ->title('فواتير الاسترجاع')
-                    //             ->body('تم إنشاء فواتير الاسترجاع بنجاح')
-                    //             ->success()
-                    //             ->send();
-                    //     })
-                    //     ->requiresConfirmation()
-                    //     ->modalWidth('4xl')
-                    //     ->modalHeading('إنشاء فاتورة استرجاع')
-                    //     ->modalSubmitActionLabel('إنشاء فواتير الاسترجاع')
-                    //     ->color('danger')
-                    //     ->bulk()
-                    //     ->deselectRecordsAfterCompletion()
-                    //     ->accessSelectedRecords()
-                    //      ->visible(fn ($livewire) =>
-                    //         $livewire instanceof \App\Filament\Resources\Tickets\Pages\ListTickets &&
-                    //         $livewire->activeTab === 'with_invoices'
-                    //     ),
 
                 ]),
             ]);

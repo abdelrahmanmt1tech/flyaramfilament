@@ -35,48 +35,56 @@ class FreeInvoicesTable
                     })
                     ->sortable(),
 
-                    TextColumn::make('display_name')
+                TextColumn::make('display_name')
                     ->label('اسم المستفيد')
                     ->getStateUsing(function ($record) {
                         if ($record->free_invoiceable_type === 'other') {
                             return $record->beneficiary_name;
                         }
-                
+
                         return optional($record->freeInvoiceable)->name ?? '-';
                     })
                     ->sortable()
                     ->searchable(),
-                
+
                 TextColumn::make('display_tax')
                     ->label('الرقم الضريبي')
                     ->getStateUsing(function ($record) {
                         if ($record->free_invoiceable_type === 'other') {
                             return $record->beneficiary_tax_number;
                         }
-                
+
                         return optional($record->freeInvoiceable)->tax_number ?? '-';
                     }),
-                
-                    TextColumn::make('display_phone')
+
+                TextColumn::make('display_phone')
                     ->label('الهاتف')
                     ->getStateUsing(function ($record) {
                         if ($record->free_invoiceable_type === 'other') {
                             return $record->beneficiary_phone;
                         }
-                
+
                         return $record->freeInvoiceable?->contactInfos?->first()?->phone ?? '-';
                     }),
-                
+
                 TextColumn::make('display_email')
                     ->label('البريد الإلكتروني')
                     ->getStateUsing(function ($record) {
                         if ($record->free_invoiceable_type === 'other') {
                             return $record->beneficiary_email;
                         }
-                
+
                         return $record->freeInvoiceable?->contactInfos?->first()?->email ?? '-';
                     }),
-                
+
+                TextColumn::make('taxType.name')
+                    ->getStateUsing(function ($record) {
+                        return $record->tax_type_id ? $record->taxType?->name . ' (' . $record->taxType?->value . '%)' : '-';
+                    })
+                    ->label('نوع الضريبة')
+                    ->placeholder('-')
+                    ->sortable(),
+
 
                 TextColumn::make('total')
                     ->label('الإجمالي')

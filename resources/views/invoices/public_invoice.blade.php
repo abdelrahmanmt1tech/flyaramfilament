@@ -424,6 +424,7 @@
                 'city',
                 'postal_code',
                 'additional_no',
+                'other_info',
             ];
             $company = \App\Models\Setting::whereIn('key', $companyKeys)->pluck('value', 'key');
             
@@ -766,6 +767,15 @@
                 <span>{{ number_format($totalAmount, 2) }} {{ $currency }}</span>
             </div>
         </div>
+
+            @if(!empty($company['other_info']))
+            <div class="notes-section" style="margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+                <strong style="display: block; color: #34495e; font-size: 14px; margin-bottom: 8px;">ملاحظات:</strong>
+                <p style="color: #2c3e50; font-size: 13px; line-height: 1.6; white-space: pre-line;">
+                    {{ $company['other_info'] }}
+                </p>
+            </div>
+        @endif
     </div>
 </body>
 

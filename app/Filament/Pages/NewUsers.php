@@ -19,6 +19,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Session;
+use Spatie\Permission\Models\Role;
 
 class NewUsers extends Page implements HasTable, HasForms
 {
@@ -78,6 +79,10 @@ class NewUsers extends Page implements HasTable, HasForms
                             ->default(fn($record) => $record['iata_code'])
                             ->readonly(),
 
+                        Select::make('roles')
+                            ->label('الدور')
+                            ->options(Role::pluck('name', 'id')->toArray()),
+
                         TextInput::make('password')
                             ->label('كلمة المرور')
                             ->password()
@@ -114,7 +119,7 @@ class NewUsers extends Page implements HasTable, HasForms
                     //    })
                     ->action(function (array $data, $record, $livewire) {
                         // إنشاء المستخدم
-                        $u=User::create([
+                        $u = User::create([
                             'name' => $data['name'],
                             'email' => $data['email'],
                             'password' => bcrypt($data['password']),
@@ -124,18 +129,22 @@ class NewUsers extends Page implements HasTable, HasForms
                         if (!empty($data['branches'])) {
                             $u->branches()->sync($data['branches']);
                         }
-                        
+
                         if (!empty($data['franchises'])) {
                             $u->franchises()->sync($data['franchises']);
                         }
+
+                        $u->roles()->sync($data['roles']);
 
                         // حذف الكود من الـ session
                         $codes = Session::get('NEW_USERS', []);
                         $codes = array_values(array_filter($codes, fn($c) => $c !== $data['iata_code']));
                         Session::put('NEW_USERS', $codes);
 
-                        // تحديث الجدول
-                        $livewire->newUsers = $codes;
+                        $this->newUsers = $codes;
+
+
+                        $this->resetTable();
 
                         Notification::make()
                             ->title("تمت إضافة المستخدم {$data['name']} بنجاح ✅")

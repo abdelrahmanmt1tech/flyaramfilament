@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions as SchemaActions;
@@ -90,6 +91,11 @@ class CompanySettings extends Page
                             TextInput::make('tourism_license')
                                 ->label('رقم ترخيص السياحة')
                                 ->maxLength(255),
+
+                            Textarea::make('other_info')
+                                ->label('معلومات أخرى')
+                                ->maxLength(1000)
+                                ->columnSpanFull(),
                         ])
                         ->columns(2),
                 ])
@@ -131,6 +137,7 @@ class CompanySettings extends Page
             'tax_number',
             'commercial_register',
             'tourism_license',
+            'other_info',
         ];
 
         $settings = Setting::whereIn('key', $keys)->pluck('value', 'key')->toArray();
