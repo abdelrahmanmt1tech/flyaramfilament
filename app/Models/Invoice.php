@@ -22,6 +22,7 @@ class Invoice extends Model
         'reservation_id',
         'slug', 
         'access_token', 
+        'items_ids',
 
 
     ];
@@ -31,6 +32,7 @@ class Invoice extends Model
         'due_date' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'items_ids' => 'array',
     ];
 
         protected static function boot()

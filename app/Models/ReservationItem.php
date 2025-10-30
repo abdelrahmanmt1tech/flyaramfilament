@@ -126,4 +126,25 @@ class ReservationItem extends Model
     {
         return $this->reservation_type === 'tourism';
     }
+
+
+    protected static function booted()
+    {
+    parent::booted();
+
+    static::created(function (ReservationItem $item) {
+        if ($item->supplier_id) {
+            AccountStatement::create([
+                'statementable_type' => Supplier::class,
+                'statementable_id'   => $item->supplier_id,
+                'date'               => now(),
+                'doc_no'             => $item->reservation->reservation_number ?? null,
+                'reservation_id'     => $item->reservation_id,
+                'debit'              => 0, 
+                'credit'             => $item->total_amount,
+                'type'               => 'purchase', 
+            ]);
+        }
+    });
+    }
 }

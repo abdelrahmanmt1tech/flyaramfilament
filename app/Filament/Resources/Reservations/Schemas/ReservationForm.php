@@ -10,6 +10,7 @@ use App\Models\Currency;
 use App\Models\Franchise;
 use App\Models\Passenger;
 use App\Models\Supplier;
+use App\Models\TaxType;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -110,11 +111,20 @@ class ReservationForm
                     ->searchable()
                     ->native(false)
                     ->placeholder('اختر الجهة أولاً من نوع الجهة')
-                    ->required()
-//                    ->disabled(fn(callable $get) => !$get('related_type'))
+                    ->required(),
 
-
-                ,
+                Select::make('tax_type_id')
+                ->label('نوع الضريبة')
+                ->relationship('taxType', 'name')
+                ->options(
+                    TaxType::get()->mapWithKeys(function ($tax) {
+                        return [$tax->id => $tax->name . ' (' . $tax->value . '%)'];
+                    })
+                )
+                ->searchable()
+                ->preload()
+                ->native(false)
+                ->required(),
 
             ])
                 ->columnSpanFull()

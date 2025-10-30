@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Placeholder;
 use Filament\Notifications\Notification;
@@ -50,7 +51,7 @@ class ReservationsTable
                         'pink' => 'internal_transport',
                         'indigo' => 'other',
                     ])
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn($state) => match ($state) {
                         'hotel' => 'فندق',
                         'car' => 'سيارة',
                         'tourism' => 'سياحة',
@@ -61,6 +62,22 @@ class ReservationsTable
                         'internal_transport' => 'تنقلات داخلية وأخرى',
                         'other' => 'أخرى',
                         default => $state
+                    })
+                    ->sortable(),
+
+                TextColumn::make('taxType.name')
+                    ->getStateUsing(function ($record) {
+                        return $record->tax_type_id ? $record->taxType?->name . ' (' . $record->taxType?->value . '%)' : '-';
+                    })
+                    ->label('نوع الضريبة')
+                    ->placeholder('-')
+                    ->sortable(),
+
+
+                TextColumn::make('total_with_tax')
+                    ->label('إجمالي مع الضريبة')
+                    ->getStateUsing(function ($record) {
+                        return $record->getTotalWithTaxAttribute();
                     })
                     ->sortable(),
 
@@ -86,7 +103,7 @@ class ReservationsTable
                     ->label('إنشاء فاتورة')
                     ->icon('heroicon-o-receipt-percent')
                     ->visible(fn($record) => !Invoice::where('reservation_id', $record->id)->exists())
-                    ->form([
+                    ->schema([
                         TextInput::make('reservation_number')
                             ->label('رقم الحجز')
                             ->default(fn($record) => $record->reservation_number)
@@ -107,7 +124,7 @@ class ReservationsTable
 
                         TextInput::make('total_amount_display')
                             ->label('الإجمالي (SAR)')
-                            ->default(fn($record) => number_format((float)$record->items()->sum('total_amount'), 2))
+                            ->default(fn($record) => number_format((float)$record->total_with_tax, 2))
                             ->disabled()
                             ->dehydrated(),
 
@@ -125,7 +142,7 @@ class ReservationsTable
                             return;
                         }
 
-                        $sum = (float) $record->items()->sum('total_amount');
+                        $sum = (float) $record->total_with_tax;
                         if ($sum <= 0) {
                             Notification::make()
                                 ->title('لا يمكن إنشاء فاتورة بإجمالي 0')
@@ -155,28 +172,27 @@ class ReservationsTable
                             ->send();
                     }),
                 Action::make('printReservationInvoice')
-                ->label('الفاتورة')
-                ->icon('heroicon-o-printer')
-                ->visible(fn($record) => \App\Models\Invoice::where('reservation_id', $record->id)->exists())
-                ->url(fn($record) => route('reservations.invoices.print', \App\Models\Invoice::where('reservation_id', $record->id)->value('slug')))
-                ->openUrlInNewTab(),
+                    ->label('الفاتورة')
+                    ->icon('heroicon-o-printer')
+                    ->visible(fn($record) => Invoice::where('reservation_id', $record->id)->exists())
+                    ->url(fn($record) => route('reservations.invoices.print', Invoice::where('reservation_id', $record->id)->value('slug')))
+                    ->openUrlInNewTab(),
 
                 Action::make('printReservationRefundInvoice')
                     ->label('فاتورة الاسترجاع')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
-                    ->visible(fn($record) => \App\Models\Invoice::where('reservation_id', $record->id)->where('type', 'refund')->exists())
+                    ->visible(fn($record) => Invoice::where('reservation_id', $record->id)->where('type', 'refund')->exists())
                     ->url(fn($record) => route(
                         'reservations.invoices.print',
-                        \App\Models\Invoice::where('reservation_id', $record->id)->where('type', 'refund')->value('slug')
+                        Invoice::where('reservation_id', $record->id)->where('type', 'refund')->value('slug')
                     ))
                     ->openUrlInNewTab(),
 
-                    Action::make('createReservationRefundInvoice')
+                Action::make('createReservationRefundInvoice')
                     ->label('إنشاء فاتورة استرجاع')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
-                    ->requiresConfirmation()
                     ->visible(function ($record) {
                         $hasOriginal = Invoice::where('reservation_id', $record->id)
                             ->where('type', '!=', 'refund')
@@ -186,7 +202,75 @@ class ReservationsTable
                             ->exists();
                         return $hasOriginal && !$hasRefund;
                     })
-                    ->action(function ($record) {
+                    ->schema(function ($record) {
+                        $items = $record->items;
+
+                        if ($items->isEmpty()) {
+                            return [
+                                Placeholder::make('no_items')
+                                    ->label('لا توجد عناصر')
+                                    ->content('هذا الحجز لا يحتوي على عناصر'),
+                            ];
+                        }
+
+                        $itemsOptions = [];
+                        foreach ($items as $item) {
+                            $type = match ($item->reservation_type) {
+                                'hotel' => 'فندق',
+                                'car' => 'سيارة',
+                                'tourism' => 'سياحة',
+                                'visa' => 'تأشيرات',
+                                'international_license' => 'رخصة قيادة دولية',
+                                'train' => 'حجز قطار',
+                                'meeting_room' => 'حجز قاعة إجتماعات',
+                                'internal_transport' => 'تنقلات داخلية وأخرى',
+                                'other' => 'أخرى',
+                                default => $item->reservation_type
+                            };
+
+                            $itemsOptions[$item->id] = sprintf(
+                                '%s - %s SAR',
+                                $type,
+                                number_format((float)$item->total_amount, 2)
+                            );
+                        }
+
+                        return [
+                            Section::make('اختر العناصر المراد استرجاعها')
+                                ->description('حدد العناصر التي تريد إنشاء فاتورة استرجاع لها')
+                                ->schema([
+                                    CheckboxList::make('selected_items')
+                                        ->label('العناصر')
+                                        ->options($itemsOptions)
+                                        ->columns(1)
+                                        ->required()
+                                        ->minItems(1)
+                                        ->default(array_keys($itemsOptions))
+                                        ->bulkToggleable(),
+
+                                    // Placeholder::make('total_info')
+                                    //     ->label('معلومات الإجمالي')
+                                    //     ->content(function ($get) use ($items) {
+                                    //         $selectedIds = $get('selected_items') ?? [];
+                                    //         if (empty($selectedIds)) {
+                                    //             return 'الرجاء اختيار عنصر واحد على الأقل';
+                                    //         }
+
+                                    //         $total = $items->whereIn('id', $selectedIds)->sum('total_amount');
+                                    //         return sprintf(
+                                    //             'إجمالي المبلغ المسترجع: %s SAR',
+                                    //             number_format((float)$total, 2)
+                                    //         );
+                                    //     })
+                                    //     ->live(),
+
+                                    TextInput::make('new_total_amount')
+                                        ->label('إجمالي المبلغ المسترجع الجديد')
+                                        ->numeric()
+                                ]),
+                        ];
+                    })
+                    ->action(function ($record, array $data) {
                         $original = Invoice::where('reservation_id', $record->id)
                             ->where('type', '!=', 'refund')
                             ->latest('id')
@@ -200,8 +284,28 @@ class ReservationsTable
                             return;
                         }
 
-                        $sum = (float) $record->items()->sum('total_amount');
-                        $total = $sum > 0 ? $sum : (float) $original->total_amount;
+                        $selectedItemIds = $data['selected_items'] ?? [];
+
+                        if (empty($selectedItemIds)) {
+                            Notification::make()
+                                ->title('يجب اختيار عنصر واحد على الأقل')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Calculate total from selected items
+                        $total = $record->items()
+                            ->whereIn('id', $selectedItemIds)
+                            ->sum('total_amount');
+
+                        if ($total <= 0) {
+                            Notification::make()
+                                ->title('إجمالي العناصر المحددة يساوي 0')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
 
                         $lastId = Invoice::max('id') ?? 0;
                         $refundNumber = 'INV-' . now()->format('Y') . '-' . str_pad($lastId + 1, 5, '0', STR_PAD_LEFT);
@@ -210,32 +314,37 @@ class ReservationsTable
                             'type'             => 'refund',
                             'is_drafted'       => false,
                             'total_taxes'      => 0,
-                            'total_amount'     => $total,
+                            'total_amount'     => $data['new_total_amount'] ?? $total,
                             'invoice_number'   => $refundNumber,
                             'notes'            => null,
                             'invoiceable_type' => $record->related_type,
                             'invoiceable_id'   => $record->related_id,
                             'reservation_id'   => $record->id,
                             'reference_num'    => $original->invoice_number,
+                            'items_ids'        => json_encode($selectedItemIds),
                         ]);
 
-                        AccountStatement::create([
-                            'statementable_type'=> $record->accountStatement->first()->statementable_type,
-                            'statementable_id'=> $record->accountStatement->first()->statementable_id,
-                            'date'=> now(),
-                            'doc_no'=> $refundNumber,
-                            'ticket_id'=> $record->accountStatement->first()->ticket_id,
-                            'lpo_no'=> $record->accountStatement->first()->lpo_no,
-                            'sector'=> $record->accountStatement->first()->sector,
-                            'debit'=> $record->accountStatement->first()->credit,
-                            'credit'=> $record->accountStatement->first()->debit,
-                            'reservation_id'=> $record->id,
-                            'type' => 'refund',
-
-                        ]);
+                        // Create account statement
+                        $firstStatement = $record->accountStatement->first();
+                        if ($firstStatement) {
+                            AccountStatement::create([
+                                'statementable_type' => $firstStatement->statementable_type,
+                                'statementable_id'   => $firstStatement->statementable_id,
+                                'date'               => now(),
+                                'doc_no'             => $refundNumber,
+                                'ticket_id'          => $firstStatement->ticket_id,
+                                'lpo_no'             => $firstStatement->lpo_no,
+                                'sector'             => $firstStatement->sector,
+                                'debit'              => 0,
+                                'credit'             => $data['new_total_amount'] ?? $total,
+                                'reservation_id'     => $record->id,
+                                'type'               => 'refund',
+                            ]);
+                        }
 
                         Notification::make()
                             ->title('تم إنشاء فاتورة استرجاع رقم ' . $refund->invoice_number)
+                            ->body('تم استرجاع ' . count($selectedItemIds) . ' عنصر بمبلغ ' . number_format($total, 2) . ' SAR')
                             ->success()
                             ->send();
                     }),
@@ -252,7 +361,7 @@ class ReservationsTable
                         ->icon('heroicon-o-receipt-percent')
                         ->accessSelectedRecords()
                         ->deselectRecordsAfterCompletion()
-                        ->form(function ($records) {
+                        ->schema(function ($records) {
                             if ($records->isEmpty()) {
                                 return [];
                             }
@@ -265,7 +374,7 @@ class ReservationsTable
                                     continue;
                                 }
 
-                                $sum = (float) $reservation->items()->sum('total_amount');
+                                $sum = (float) $reservation->total_with_tax;
 
                                 // Skip if total is 0
                                 if ($sum <= 0) {
@@ -337,7 +446,7 @@ class ReservationsTable
                                     continue;
                                 }
 
-                                $sum = (float) $reservation->items()->sum('total_amount');
+                                $sum = (float) $reservation->total_with_tax;
 
                                 if ($sum <= 0) {
                                     continue;

@@ -162,35 +162,7 @@ class TicketParser
         if (preg_match('/\b(REI|REISSUE|REISS)\b/u', $joined)) {
             return ['تذكرة معاد إصدارها', 'REI'];
         }
-
-        if (
-            preg_match('/^T-\s*(?:K)?\d{3}-?\d{10}\b/m', $joined) ||
-            preg_match('/\bTKOK\b/u', $joined) ||
-            preg_match('/\/\/ET[A-Z0-9]{2}\b/u', $joined)
-        ) {
-            return ['تذكرة مؤكدة', 'TKT'];
-        }
-
-
-        // 4) مستندات/تقارير أخرى
-        if (preg_match('/\bSPDR\b/u', $joined)) return ['تقرير مبيعات (SPDR)', 'SPDR'];
-        if (preg_match('/\bADMA\b/u', $joined))  return ['مذكرة خصم للوكيل (ADMA)', 'ADMA'];
-        if (preg_match('/\bACMA\b/u', $joined))  return ['مذكرة ائتمان للوكيل (ACMA)', 'ACMA'];
-        if (preg_match('/\bADM\b/u',  $joined))  return ['مذكرة خصم (ADM)', 'ADM'];
-        if (preg_match('/\bACMa\b/u',  $joined))  return ['حافز من الطيران تكون على التذكرة  (ACMa)', 'ACMa'];
-        if (preg_match('/\bACM\b/u',  $joined))  return ['مذكرة ائتمان (ACM)', 'ACM'];
-
-        // 5) AMD إن لم يوجد شيء أقوى
-        if (preg_match('/\bAMD\b/u', $joined)) {
-            return ['سند/مذكرة محاسبية (AMD)', 'AMD'];
-        }
-
-        // 6) RQ كخيار أخير
-        if (preg_match('/\bRQ\b/u', $joined)) {
-            return ['حجز غير مؤكد (RQ)', 'RQ'];
-        }
-
-
+        
 
         $checks = [
             ['/\b(VOID|CANCEL|CANCELLED|CANXX|CANX|CNL|CXL|CXLD)\b/u', 'ملغاة / مسترجعة', 'VOID'],
@@ -216,6 +188,37 @@ class TicketParser
         foreach ($checks as [$re, $label, $code]) {
             if (preg_match($re, $joined)) return [$label, $code];
         }
+
+                // 5) AMD إن لم يوجد شيء أقوى
+        if (preg_match('/\bAMD\b/u', $joined)) {
+            return ['سند/مذكرة محاسبية (AMD)', 'AMD'];
+        }
+
+        // 6) RQ كخيار أخير
+        if (preg_match('/\bRQ\b/u', $joined)) {
+            return ['حجز غير مؤكد (RQ)', 'RQ'];
+        }
+
+
+        if (
+            preg_match('/^T-\s*(?:K)?\d{3}-?\d{10}\b/m', $joined) ||
+            preg_match('/\bTKOK\b/u', $joined) ||
+            preg_match('/\/\/ET[A-Z0-9]{2}\b/u', $joined)
+        ) {
+            return ['تذكرة مؤكدة', 'TKT'];
+        }
+
+
+        // 4) مستندات/تقارير أخرى
+        if (preg_match('/\bSPDR\b/u', $joined)) return ['تقرير مبيعات (SPDR)', 'SPDR'];
+        if (preg_match('/\bADMA\b/u', $joined))  return ['مذكرة خصم للوكيل (ADMA)', 'ADMA'];
+        if (preg_match('/\bACMA\b/u', $joined))  return ['مذكرة ائتمان للوكيل (ACMA)', 'ACMA'];
+        if (preg_match('/\bADM\b/u',  $joined))  return ['مذكرة خصم (ADM)', 'ADM'];
+        if (preg_match('/\bACMa\b/u',  $joined))  return ['حافز من الطيران تكون على التذكرة  (ACMa)', 'ACMa'];
+        if (preg_match('/\bACM\b/u',  $joined))  return ['مذكرة ائتمان (ACM)', 'ACM'];
+
+
+
         return [null, null];
     }
 

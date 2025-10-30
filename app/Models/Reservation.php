@@ -17,6 +17,7 @@ class Reservation extends Model
         'ticket_id',
         'passenger_id',
         'reservation_number',
+        'tax_type_id',
     ];
 
     protected static function boot()
@@ -80,5 +81,19 @@ class Reservation extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function taxType()
+    {
+        return $this->belongsTo(TaxType::class);
+    }
+
+      public function getTotalWithTaxAttribute(): float
+    {
+        $itemsTotal = $this->items()->sum('total_amount');
+
+        $taxValue = $this->taxType?->value ?? 0;
+
+        return $itemsTotal + ($itemsTotal * ($taxValue / 100));
     }
 }

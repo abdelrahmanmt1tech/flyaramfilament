@@ -233,11 +233,13 @@
         }
 
         .totals-section {
-            max-width: 400px;
+            max-width: 350px;
             margin-right: auto;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
+            background: #f9f9f9;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .total-row {
@@ -250,11 +252,6 @@
 
         .total-row:last-child {
             border-bottom: none;
-            font-size: 15px;
-            font-weight: bold;
-            color: #2c3e50;
-            padding-top: 12px;
-            border-top: 2px solid #34495e;
         }
 
         .print-button {
@@ -343,7 +340,13 @@
             }
 
             .total-row {
-                padding: 6px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px dashed #dee2e6;
+                font-size: 13px;
+                color: #34495e;
             }
 
             /* منع تقسيم الجدول */
@@ -378,6 +381,15 @@
             .parties-section {
                 grid-template-columns: 1fr;
             }
+        }
+
+        .total-final {
+            font-weight: bold;
+            font-size: 15px;
+            color: #2c3e50;
+            border-top: 2px solid #34495e;
+            margin-top: 10px;
+            padding-top: 10px;
         }
     </style>
 </head>
@@ -436,8 +448,13 @@
             // Passenger on reservation
             $passengerName = $reservation?->passenger?->first_name;
 
-            // Items info
-            $items = $reservation?->items()->with('supplier')->get();
+            if ($invoice->items_ids) {
+                $items_ids = json_decode($invoice->items_ids);
+
+                $items = $reservation?->items()->with('supplier')->whereIn('id', $items_ids)->get();
+            } else {
+                $items = $reservation?->items()->with('supplier')->get();
+            }
 
             // Service type: prefer item's service_type; fallback to mapped Arabic by reservation_type or raw
 $reservationTypes = [
@@ -630,7 +647,7 @@ $reservationTypes = [
                             @else
                                 <div class="item-title">{{ $serviceType }}</div>
                                 <div class="item-details">
-                                  تفاصيل الخدمة:  {{ $item->service_details ?? '-' }}
+                                    تفاصيل الخدمة: {{ $item->service_details ?? '-' }}
                                 </div>
                             @endif
                         </td>
@@ -646,6 +663,10 @@ $reservationTypes = [
 
         <div class="totals-section">
             <div class="total-row">
+                <span>الضرائب (Taxes):</span>
+                <span>{{ number_format((float) $invoice->total_amount - $items->sum('total_amount'), 2) }} SAR</span>
+            </div>
+            <div class="total-row total-final">
                 <span>الإجمالي النهائي (Total):</span>
                 <span>{{ number_format((float) $invoice->total_amount, 2) }} SAR</span>
             </div>
@@ -658,8 +679,9 @@ $reservationTypes = [
             </div>
         @endif
 
-            @if(!empty($company['other_info']))
-            <div class="notes-section" style="margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
+        @if (!empty($company['other_info']))
+            <div class="notes-section"
+                style="margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6;">
                 <strong style="display: block; color: #34495e; font-size: 14px; margin-bottom: 8px;">ملاحظات:</strong>
                 <p style="color: #2c3e50; font-size: 13px; line-height: 1.6; white-space: pre-line;">
                     {{ $company['other_info'] }}

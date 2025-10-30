@@ -316,10 +316,10 @@
 
             <div class="invoice-type-badge">فاتورة حرة</div>
 
-            <div class="qr-code">
+            {{-- <div class="qr-code">
                 {!! $qrCode ??
                     '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#eee"/><text x="50" y="55" font-size="12" text-anchor="middle" fill="#999">QR</text></svg>' !!}
-            </div>
+            </div> --}}
         </div>
 
         @php

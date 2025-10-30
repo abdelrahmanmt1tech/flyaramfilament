@@ -129,7 +129,7 @@ class AccountTaxResource extends Resource
             ->columns([
 
                 TextColumn::make('ticket.ticket_number_core')->copyable()
-                    ->label('رقم الفاتورة')
+                    ->label('رقم التذكرة')
                     ->sortable()
                     ->searchable() ,
 

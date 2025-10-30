@@ -14,15 +14,7 @@ class CreateReservation extends CreateRecord
     protected function afterCreate(): void
     {
         // Try summing from persisted relation first
-        $sum = (float) $this->record->items()->sum('total_amount');
-
-        // Fallback: sum from form state if relations not yet available
-        if ($sum <= 0) {
-            $items = $this->form->getState()['items'] ?? [];
-            $sum = (float) collect($items)->sum(function ($item) {
-                return (float) ($item['total_amount'] ?? 0);
-            });
-        }
+        $sum = (float) $this->record->total_with_tax;
 
         if ($sum > 0) {
             // Ensure we have related info available on the record

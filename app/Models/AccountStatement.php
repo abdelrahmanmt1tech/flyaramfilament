@@ -85,11 +85,7 @@ class AccountStatement extends Model
      */
     public static function logReservation(Reservation $reservation , $type = 'sale')
     {
-        $total = (float) $reservation->items()->sum('total_amount');
-
-        // if ($total <= 0) {
-        //     return null;
-        // }
+        $total = (float) $reservation->total_with_tax;
 
         return self::create([
             'statementable_type' => $reservation->related_type,
